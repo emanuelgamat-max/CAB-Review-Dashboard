@@ -1,0 +1,1749 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAB Review & Governance Dashboard</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- SheetJS for Excel Parsing & Export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        teal: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            200: '#99f6e4',
+                            300: '#5eead4',
+                            400: '#2dd4bf',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                            800: '#115e59',
+                            900: '#134e4a',
+                            950: '#042f2e',
+                        },
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #ffffff;
+            color: #0f172a;
+            font-family: 'Inter', sans-serif;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #0d9488;
+        }
+        .badge-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .6; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-white text-slate-900 antialiased selection:bg-teal-500 selection:text-white">
+
+    <!-- Header Bar -->
+    <header class="sticky top-0 z-40 border-b border-teal-100 bg-white/95 backdrop-blur-md px-4 lg:px-8 py-3 shadow-sm">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+            
+            <!-- Logo & Title -->
+            <div class="flex items-center space-x-3">
+                <div class="p-2.5 bg-gradient-to-br from-teal-600 to-teal-800 rounded-xl text-white shadow-md shadow-teal-600/20">
+                    <i data-lucide="shield-check" class="w-6 h-6 stroke-[2.5]"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-display text-xl font-bold tracking-tight text-slate-900">CAB Governance Reviewer</h1>
+                        <span class="px-2 py-0.5 text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200 rounded-full">v3.0 Executive</span>
+                    </div>
+                    <p class="text-xs text-slate-500">Co-Change Manager Assessment Portal & Analysis Engine</p>
+                </div>
+            </div>
+
+            <!-- Schedule & Meeting Indicator -->
+            <div class="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-2 px-3 text-xs">
+                <div class="flex items-center gap-2 text-slate-700 border-r border-slate-200 pr-3">
+                    <i data-lucide="calendar-clock" class="w-4 h-4 text-teal-600"></i>
+                    <div>
+                        <span class="font-medium text-slate-900 block">Next CAB Schedule</span>
+                        <span class="text-slate-500 text-[11px]">Tue 10:00 AM EST | Thu 11:00 AM EST <strong class="text-teal-700">(Cutoff: 6:00 AM EST)</strong></span>
+                    </div>
+                </div>
+                <div id="cab-countdown" class="text-right pl-1">
+                    <span class="text-[10px] uppercase font-bold text-teal-700 block tracking-wider">Status</span>
+                    <span id="cab-status-badge" class="font-semibold text-emerald-600 flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block badge-pulse"></span> Active Session
+                    </span>
+                </div>
+            </div>
+
+            <!-- Header Quick Actions -->
+            <div class="flex items-center gap-2 flex-wrap">
+                <button onclick="openManualCRModal()" class="flex items-center gap-1.5 bg-teal-600 hover:bg-teal-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition shadow-sm" title="Manually paste or enter a late CR">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Add Manual CR
+                </button>
+                <button onclick="exportToExcel()" class="flex items-center gap-1.5 bg-teal-800 hover:bg-teal-900 text-white px-3.5 py-2 rounded-xl text-xs font-semibold transition shadow-sm">
+                    <i data-lucide="download" class="w-4 h-4"></i> Export High-Level Summary
+                </button>
+                <button onclick="promptClearData()" class="flex items-center gap-1 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 px-2.5 py-2 rounded-xl text-xs font-medium border border-slate-200 transition" title="Clear all tickets from queue">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-600"></i> Clear Data
+                </button>
+                <button onclick="loadDemoSampleData()" class="flex items-center gap-1 bg-slate-100 hover:bg-teal-50 text-slate-600 hover:text-teal-700 px-2.5 py-2 rounded-xl text-xs font-medium border border-slate-200 transition" title="Load sample demo tickets for testing">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Load Sample
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Toast Notification Banner -->
+    <div id="toast-notification" class="fixed bottom-5 right-5 z-50 hidden transition-all duration-300 transform translate-y-2">
+        <div id="toast-content" class="flex items-center gap-3 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl border border-slate-700 text-xs font-medium max-w-md">
+            <i id="toast-icon" data-lucide="info" class="w-4 h-4 text-teal-400 shrink-0"></i>
+            <span id="toast-message">Notification message</span>
+        </div>
+    </div>
+
+    <!-- Clear Confirmation Modal -->
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white border border-slate-200 rounded-2xl max-w-sm w-full p-5 shadow-2xl text-center space-y-4">
+            <div class="w-10 h-10 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
+                <i data-lucide="trash-2" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h3 class="font-bold text-slate-900 text-base">Clear All Ticket Data?</h3>
+                <p class="text-xs text-slate-500 mt-1">This will remove all current tickets from the review queue. This action cannot be undone.</p>
+            </div>
+            <div class="flex items-center justify-center gap-2 pt-2">
+                <button onclick="closeConfirmModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-4 py-2 rounded-xl text-xs transition">
+                    Cancel
+                </button>
+                <button onclick="executeClearData()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-semibold px-4 py-2 rounded-xl text-xs transition shadow-sm">
+                    Yes, Clear Data
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Manual CR Modal -->
+    <div id="manual-cr-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 my-auto max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                <div class="flex items-center gap-2">
+                    <div class="p-2 bg-teal-100 text-teal-700 rounded-lg">
+                        <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-base">Manually Add Change Request</h3>
+                        <p class="text-xs text-slate-500">Copy & paste CR details from ServiceNow or email</p>
+                    </div>
+                </div>
+                <button onclick="closeManualCRModal()" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="manual-cr-form" onsubmit="handleManualCRSubmit(event)" class="space-y-3 text-xs">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">CR Number *</label>
+                        <input type="text" id="manual-id" required placeholder="e.g. CHG0052990" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 focus:border-teal-600 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Submitter / Requested By</label>
+                        <input type="text" id="manual-submitter" placeholder="e.g. John Doe (Infrastructure)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 focus:border-teal-600 focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Short Description / Title *</label>
+                    <input type="text" id="manual-title" required placeholder="Brief title of the change request..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 focus:border-teal-600 focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Impact Level</label>
+                        <select id="manual-impact" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 focus:border-teal-600 focus:outline-none">
+                            <option value="Low">Low Impact</option>
+                            <option value="Medium" selected>Medium Impact</option>
+                            <option value="High">High Impact</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Category</label>
+                        <input type="text" id="manual-category" placeholder="e.g. Infrastructure, Database" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 focus:border-teal-600 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Opened / Created Date</label>
+                        <input type="text" id="manual-opened" placeholder="e.g. 2026-08-18 07:30" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 focus:border-teal-600 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="clock-alert" class="w-4 h-4 text-rose-600 shrink-0"></i>
+                        <span class="text-slate-800 font-medium">Flag as Late Submission (Missed 6:00 AM EST Cutoff)?</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="manual-late-toggle" checked class="sr-only peer">
+                        <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rose-600"></div>
+                    </label>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Business Justification</label>
+                    <textarea id="manual-justification" rows="2" placeholder="Describe the business reason..." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 focus:border-teal-600 focus:outline-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Implementation Plan</label>
+                    <textarea id="manual-implementation" rows="2" placeholder="Step-by-step rollout steps..." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 focus:border-teal-600 focus:outline-none"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Risk & Impact Analysis</label>
+                        <textarea id="manual-risk" rows="2" placeholder="Risk assessment details..." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 focus:border-teal-600 focus:outline-none"></textarea>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Backout / Rollback Plan</label>
+                        <textarea id="manual-backout" rows="2" placeholder="Steps to revert back..." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 focus:border-teal-600 focus:outline-none"></textarea>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Test & Validation Plan</label>
+                        <textarea id="manual-test" rows="2" placeholder="Testing & verification steps..." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 focus:border-teal-600 focus:outline-none"></textarea>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Schedule Start / End & Outage</label>
+                        <input type="text" id="manual-dates" placeholder="Start: 2026-08-19 20:00 | End: 2026-08-20 02:00" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 focus:border-teal-600 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+                    <button type="button" onclick="closeManualCRModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold transition shadow-sm flex items-center gap-1.5">
+                        <i data-lucide="check" class="w-4 h-4"></i> Add to Review Queue
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 space-y-6">
+
+        <!-- Metrics Overview Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            
+            <!-- Total CRs Card -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col justify-between relative overflow-hidden shadow-sm">
+                <span class="text-xs text-slate-500 font-medium">Total Tickets Listed</span>
+                <div class="flex items-baseline justify-between mt-2">
+                    <span id="stat-total" class="text-2xl font-bold font-display text-slate-900">0</span>
+                    <span class="text-xs text-slate-500">CAB Queue</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-1 mt-3">
+                    <div id="bar-total" class="bg-teal-600 h-1 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Green Ready Card -->
+            <div class="bg-emerald-50/50 border border-emerald-200 rounded-xl p-4 flex flex-col justify-between relative shadow-sm">
+                <span class="text-xs text-emerald-700 font-medium flex items-center gap-1.5">
+                    <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Ready for CAB (Green)
+                </span>
+                <div class="flex items-baseline justify-between mt-2">
+                    <span id="stat-green" class="text-2xl font-bold font-display text-emerald-700">0</span>
+                    <span class="text-xs text-emerald-600">Approved Ready</span>
+                </div>
+                <div class="w-full bg-emerald-200/60 rounded-full h-1 mt-3">
+                    <div id="bar-green" class="bg-emerald-600 h-1 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Yellow Minor Modifications Card -->
+            <div class="bg-amber-50/50 border border-amber-200 rounded-xl p-4 flex flex-col justify-between shadow-sm">
+                <span class="text-xs text-amber-700 font-medium flex items-center gap-1.5">
+                    <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> Minor Modifications (Yellow)
+                </span>
+                <div class="flex items-baseline justify-between mt-2">
+                    <span id="stat-yellow" class="text-2xl font-bold font-display text-amber-700">0</span>
+                    <span class="text-xs text-amber-600">Requires Touch-up</span>
+                </div>
+                <div class="w-full bg-amber-200/60 rounded-full h-1 mt-3">
+                    <div id="bar-yellow" class="bg-amber-500 h-1 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Red Major Modifications Card -->
+            <div class="bg-rose-50/50 border border-rose-200 rounded-xl p-4 flex flex-col justify-between shadow-sm">
+                <span class="text-xs text-rose-700 font-medium flex items-center gap-1.5">
+                    <i data-lucide="x-circle" class="w-3.5 h-3.5"></i> Reject / Fix (Red)
+                </span>
+                <div class="flex items-baseline justify-between mt-2">
+                    <span id="stat-red" class="text-2xl font-bold font-display text-rose-700">0</span>
+                    <span class="text-xs text-rose-600">Critical Defect</span>
+                </div>
+                <div class="w-full bg-rose-200/60 rounded-full h-1 mt-3">
+                    <div id="bar-red" class="bg-rose-600 h-1 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- CAB Meeting Approved Card -->
+            <div class="bg-teal-50/60 border border-teal-200 rounded-xl p-4 flex flex-col justify-between shadow-sm">
+                <span class="text-xs text-teal-800 font-medium flex items-center gap-1.5">
+                    <i data-lucide="award" class="w-3.5 h-3.5 text-teal-600"></i> CAB Approved Archive
+                </span>
+                <div class="flex items-baseline justify-between mt-2">
+                    <span id="stat-approved" class="text-2xl font-bold font-display text-teal-800">0</span>
+                    <span class="text-xs text-teal-600">Signed Off</span>
+                </div>
+                <div class="w-full bg-teal-200 rounded-full h-1 mt-3">
+                    <div id="bar-approved" class="bg-teal-600 h-1 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-Time Anomaly & Governance Trends Widget -->
+        <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-teal-950 text-white rounded-2xl p-4 shadow-md border border-slate-700">
+            <div class="flex items-center justify-between mb-3 border-b border-slate-700/80 pb-2">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="trending-up" class="w-4 h-4 text-teal-400"></i>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-teal-300">Real-Time Governance Trends & Anomaly Radar</h3>
+                </div>
+                <span class="text-[10px] bg-teal-900/80 text-teal-300 border border-teal-700/60 px-2 py-0.5 rounded-full font-mono">Live Batch Analysis</span>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                <div class="bg-slate-800/70 border border-slate-700 p-2.5 rounded-xl">
+                    <span class="text-[10px] text-slate-400 block font-medium">Late Submissions</span>
+                    <span id="trend-late-count" class="text-lg font-bold text-rose-400 font-display">0</span>
+                    <span id="trend-late-pct" class="text-[10px] text-slate-400 block mt-0.5">(0% of total)</span>
+                </div>
+                <div class="bg-slate-800/70 border border-slate-700 p-2.5 rounded-xl">
+                    <span class="text-[10px] text-slate-400 block font-medium">Risk vs Impact Mismatches</span>
+                    <span id="trend-risk-mismatch" class="text-lg font-bold text-amber-400 font-display">0</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">Rating Discrepancies</span>
+                </div>
+                <div class="bg-slate-800/70 border border-slate-700 p-2.5 rounded-xl">
+                    <span class="text-[10px] text-slate-400 block font-medium">Schedule Duration Flags</span>
+                    <span id="trend-duration-flags" class="text-lg font-bold text-teal-300 font-display">0</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">Extended Windows</span>
+                </div>
+                <div class="bg-slate-800/70 border border-slate-700 p-2.5 rounded-xl">
+                    <span class="text-[10px] text-slate-400 block font-medium">Missing Backout / Test</span>
+                    <span id="trend-missing-plans" class="text-lg font-bold text-rose-300 font-display">0</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">Incomplete Governance</span>
+                </div>
+            </div>
+            <p id="trend-summary-text" class="text-[11px] text-slate-300 mt-2.5 pt-2 border-t border-slate-700/60 italic text-center">
+                Upload a change request spreadsheet or add manual CRs to generate trend telemetry.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <!-- Dropzone -->
+            <div class="lg:col-span-2 bg-slate-50 border-2 border-dashed border-teal-300 hover:border-teal-500 transition-colors rounded-2xl p-5 text-center relative flex flex-col justify-center items-center group cursor-pointer shadow-sm" id="drop-zone">
+                <input type="file" id="xlsx-upload" accept=".xlsx, .xls, .csv" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onchange="handleFileUpload(event)">
+                <div class="p-3 bg-teal-100/70 group-hover:bg-teal-200/80 text-teal-700 rounded-full mb-2 transition">
+                    <i data-lucide="file-up" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-sm font-semibold text-slate-900">Upload Change Requests Spreadsheet (.xlsx)</h3>
+                <p class="text-xs text-slate-500 mt-1 max-w-md">Drag & drop your ServiceNow / ITSM Excel file here. The smart engine automatically recognizes headers, maps CR numbers, and assesses governance rules.</p>
+                <div class="flex items-center gap-2 mt-3 text-[11px] text-teal-700 font-mono bg-teal-50 px-3 py-1 rounded-full border border-teal-200">
+                    <span>Supports: Number, Short description, Justification, Implementation, Risk, Backout, Test, Dates</span>
+                </div>
+            </div>
+
+            <!-- Co-Change Manager Checklist -->
+            <div class="bg-gradient-to-br from-slate-50 via-teal-50/30 to-white border border-teal-200 rounded-2xl p-5 flex flex-col justify-between shadow-sm">
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold text-teal-800 uppercase tracking-wider flex items-center gap-1.5">
+                            <i data-lucide="compass" class="w-4 h-4 text-teal-600"></i> Co-Change Manager Governance Rules
+                        </span>
+                        <span class="text-[10px] bg-teal-100 text-teal-800 px-2 py-0.5 rounded-full font-medium">Non-Technical Checks</span>
+                    </div>
+                    <ul class="text-xs text-slate-600 space-y-1.5 mt-2">
+                        <li class="flex items-start gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5"></i> <span><strong>Cutoff Deadline:</strong> Submission ("Opened") must be prior to 6:00 AM EST on CAB day.</span></li>
+                        <li class="flex items-start gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5"></i> <span><strong>Justification:</strong> Clear & makes operational sense.</span></li>
+                        <li class="flex items-start gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5"></i> <span><strong>Implementation:</strong> Step-by-step complete execution plan.</span></li>
+                        <li class="flex items-start gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5"></i> <span><strong>Risk vs Impact:</strong> Impact matches Low/Med/High rating.</span></li>
+                        <li class="flex items-start gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5"></i> <span><strong>Backout Plan:</strong> Clear revert steps (Mandatory).</span></li>
+                        <li class="flex items-start gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5"></i> <span><strong>Schedules & Duration:</strong> Flags long windows (7-day patching exempted).</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+            
+            <!-- Category Tabs -->
+            <div class="flex items-center gap-1 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
+                <button onclick="setTab('all')" id="tab-all" class="tab-btn active px-4 py-2 rounded-xl text-xs font-medium transition flex items-center gap-2 bg-teal-600 text-white font-semibold shadow-sm">
+                    <span>All Tickets</span>
+                    <span id="tab-count-all" class="px-1.5 py-0.5 text-[10px] rounded-full bg-white/20 text-white">0</span>
+                </button>
+                <button onclick="setTab('green')" id="tab-green" class="tab-btn px-4 py-2 rounded-xl text-xs font-medium transition flex items-center gap-2 bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-emerald-500/50">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span>Ready for CAB</span>
+                    <span id="tab-count-green" class="px-1.5 py-0.5 text-[10px] rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">0</span>
+                </button>
+                <button onclick="setTab('yellow')" id="tab-yellow" class="tab-btn px-4 py-2 rounded-xl text-xs font-medium transition flex items-center gap-2 bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-amber-500/50">
+                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                    <span>Minor Modification</span>
+                    <span id="tab-count-yellow" class="px-1.5 py-0.5 text-[10px] rounded-full bg-amber-100 text-amber-800 border border-amber-200">0</span>
+                </button>
+                <button onclick="setTab('red')" id="tab-red" class="tab-btn px-4 py-2 rounded-xl text-xs font-medium transition flex items-center gap-2 bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-rose-500/50">
+                    <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                    <span>Major Modification / Reject</span>
+                    <span id="tab-count-red" class="px-1.5 py-0.5 text-[10px] rounded-full bg-rose-100 text-rose-800 border border-rose-200">0</span>
+                </button>
+                <button onclick="setTab('approved')" id="tab-approved" class="tab-btn px-4 py-2 rounded-xl text-xs font-medium transition flex items-center gap-2 bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-teal-500/50">
+                    <i data-lucide="archive" class="w-3.5 h-3.5 text-teal-600"></i>
+                    <span>Approved CRs from Last CAB</span>
+                    <span id="tab-count-approved" class="px-1.5 py-0.5 text-[10px] rounded-full bg-teal-100 text-teal-800 border border-teal-200">0</span>
+                </button>
+            </div>
+
+            <!-- Search & Filters -->
+            <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                <!-- Search Input -->
+                <div class="relative flex-1 md:w-56">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
+                    <input type="text" id="search-input" placeholder="Search CR #, title, owner..." oninput="renderCRList()" class="w-full bg-white border border-slate-300 focus:border-teal-600 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none transition shadow-sm">
+                </div>
+
+                <!-- Date Filter Input & Clear Date Button -->
+                <div class="relative flex items-center gap-1">
+                    <i data-lucide="calendar" class="w-4 h-4 text-slate-400 absolute left-2.5 top-2 pointer-events-none"></i>
+                    <input type="date" id="date-filter" onchange="renderCRList()" class="bg-white border border-slate-300 text-slate-800 text-xs rounded-xl pl-8 pr-2 py-1.5 focus:border-teal-600 focus:outline-none shadow-sm cursor-pointer" title="Filter by Planned Schedule Date">
+                    <button onclick="clearDateFilter()" id="clear-date-btn" class="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-xl text-xs font-medium border border-slate-300 transition shadow-sm" title="Clear Date Filter">
+                        <i data-lucide="calendar-x" class="w-3.5 h-3.5 text-rose-600"></i>
+                        <span>Clear Date</span>
+                    </button>
+                </div>
+
+                <!-- Risk/Impact Dropdown -->
+                <select id="risk-filter" onchange="renderCRList()" class="bg-white border border-slate-300 text-slate-800 text-xs rounded-xl px-3 py-1.5 focus:border-teal-600 focus:outline-none shadow-sm">
+                    <option value="all">All Impact Levels</option>
+                    <option value="High">High Impact</option>
+                    <option value="Medium">Medium Impact</option>
+                    <option value="Low">Low Impact</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Ticket Cards List -->
+        <div id="cr-list-container" class="space-y-4">
+            <!-- Dynamic Content Injected Here via JavaScript -->
+        </div>
+
+    </main>
+
+    <!-- CR Detailed Review Modal -->
+    <div id="cr-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white border border-slate-200 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto">
+            <!-- Modal Header -->
+            <div class="p-5 border-b border-slate-200 bg-slate-50 flex items-start justify-between gap-4">
+                <div class="flex items-start gap-3">
+                    <span id="modal-rag-badge" class="px-2.5 py-1 text-xs font-bold rounded-lg uppercase tracking-wider shrink-0 mt-0.5">
+                        GREEN
+                    </span>
+                    <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span id="modal-cr-id" class="text-xs font-mono font-bold text-teal-800 bg-teal-50 border border-teal-200 px-2.5 py-0.5 rounded">CHG000000</span>
+                            <span id="modal-category" class="text-xs text-slate-600 bg-slate-200/70 px-2 py-0.5 rounded-full">Infrastructure</span>
+                            <span id="modal-schedule-alert" class="hidden text-xs bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 rounded-full flex items-center gap-1 font-semibold">
+                                <i data-lucide="clock" class="w-3 h-3 text-amber-600"></i> Duration Flagged
+                            </span>
+                        </div>
+                        <h2 id="modal-title" class="text-lg font-bold font-display text-slate-900 mt-1">Ticket Title</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Submitter: <span id="modal-submitter" class="text-slate-800 font-medium">Unassigned</span> | Impact Level: <span id="modal-impact" class="text-slate-800 font-medium">Medium</span> | Opened: <span id="modal-opened-date" class="text-slate-800 font-medium font-mono">N/A</span></p>
+                    </div>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-200 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6 overflow-y-auto space-y-6 text-xs leading-relaxed text-slate-700">
+                
+                <!-- Quick Governance Diagnostic Summary -->
+                <div id="modal-governance-summary" class="p-4 rounded-xl border bg-slate-50 border-slate-200">
+                    <h4 class="font-semibold text-slate-900 mb-2 flex items-center gap-2 text-sm">
+                        <i data-lucide="cpu" class="w-4 h-4 text-teal-600"></i> Automated Governance Analysis & Diagnostics
+                    </h4>
+                    <div id="modal-checks-list" class="space-y-1.5 text-xs">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Field Breakdown Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    
+                    <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                        <h5 class="text-xs font-semibold text-teal-800 mb-1 flex items-center justify-between">
+                            <span>1. Business Justification</span>
+                            <i data-lucide="file-text" class="w-3.5 h-3.5 text-slate-400"></i>
+                        </h5>
+                        <p id="modal-justification" class="text-slate-700 whitespace-pre-line"></p>
+                    </div>
+
+                    <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                        <h5 class="text-xs font-semibold text-teal-800 mb-1 flex items-center justify-between">
+                            <span>2. Implementation Steps</span>
+                            <i data-lucide="list-checks" class="w-3.5 h-3.5 text-slate-400"></i>
+                        </h5>
+                        <p id="modal-implementation" class="text-slate-700 whitespace-pre-line"></p>
+                    </div>
+
+                    <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                        <div class="flex items-center justify-between mb-1">
+                            <h5 class="text-xs font-semibold text-teal-800 flex items-center gap-1.5">
+                                <span>3. Risk & Impact Analysis</span>
+                                <i data-lucide="alert-octagon" class="w-3.5 h-3.5 text-slate-400"></i>
+                            </h5>
+                            <button id="modal-risk-override-btn" onclick="toggleRiskMismatchOverrideFromModal()" class="px-2 py-1 text-[10px] font-bold rounded-lg transition border">
+                                Grant Risk Exception
+                            </button>
+                        </div>
+                        <p id="modal-risk" class="text-slate-700 whitespace-pre-line"></p>
+                    </div>
+
+                    <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                        <h5 class="text-xs font-semibold text-teal-800 mb-1 flex items-center justify-between">
+                            <span>4. Backout / Rollback Plan</span>
+                            <i data-lucide="undo-2" class="w-3.5 h-3.5 text-slate-400"></i>
+                        </h5>
+                        <p id="modal-backout" class="text-slate-700 whitespace-pre-line"></p>
+                    </div>
+
+                    <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                        <h5 class="text-xs font-semibold text-teal-800 mb-1 flex items-center justify-between">
+                            <span>5. Test & Validation Plan</span>
+                            <i data-lucide="badge-check" class="w-3.5 h-3.5 text-slate-400"></i>
+                        </h5>
+                        <p id="modal-test" class="text-slate-700 whitespace-pre-line"></p>
+                    </div>
+
+                    <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                        <h5 class="text-xs font-semibold text-teal-800 mb-1 flex items-center justify-between">
+                            <span>6. Schedule & Outage Windows</span>
+                            <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i>
+                        </h5>
+                        <div class="space-y-1 text-xs">
+                            <p><strong>Planned Window:</strong> <span id="modal-dates" class="text-teal-700 font-medium"></span></p>
+                            <p><strong>Calculated Duration:</strong> <span id="modal-duration"></span></p>
+                            <p><strong>Outage Details:</strong> <span id="modal-outage"></span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submitter Interview Questions -->
+                <div class="bg-teal-50/70 border border-teal-200 rounded-xl p-4">
+                    <h4 class="font-semibold text-teal-900 mb-2 flex items-center gap-2 text-xs uppercase tracking-wider">
+                        <i data-lucide="help-circle" class="w-4 h-4 text-teal-600"></i> Recommended Questions to Ask Submitter in CAB
+                    </h4>
+                    <ul id="modal-questions" class="space-y-2 list-disc list-inside text-xs text-slate-800">
+                        <!-- Populated dynamically -->
+                    </ul>
+                </div>
+
+                <!-- Review Notes Section -->
+                <div class="space-y-2">
+                    <label class="block text-xs font-semibold text-slate-900 flex items-center gap-2">
+                        <i data-lucide="edit-3" class="w-3.5 h-3.5 text-teal-600"></i> Co-Change Manager Review Notes
+                    </label>
+                    <textarea id="modal-notes-input" rows="3" placeholder="Enter findings, feedback for submitter, or points to raise in Tuesday/Thursday CAB..." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs text-slate-900 placeholder-slate-400 focus:border-teal-600 focus:bg-white focus:outline-none transition shadow-sm"></textarea>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 border-t border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-500 font-medium">Attachments:</span>
+                    <div id="modal-attachment-buttons" class="flex gap-1">
+                        <!-- Attachment JS buttons -->
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button onclick="saveModalNotes()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        Save Notes
+                    </button>
+                    <button id="modal-cancel-btn" onclick="toggleModalCancelled()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-xl text-xs transition border border-slate-300 flex items-center gap-1">
+                        <i data-lucide="ban" class="w-3.5 h-3.5 text-slate-500"></i> Cancel CR
+                    </button>
+                    <button id="modal-review-btn" onclick="toggleModalReviewed()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition shadow-md flex items-center gap-1.5">
+                        <i data-lucide="check-circle-2" class="w-4 h-4"></i> Mark Reviewed & Move to Ready
+                    </button>
+                    <button id="modal-approve-btn" onclick="toggleModalApproval()" class="bg-teal-700 hover:bg-teal-800 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition shadow-md flex items-center gap-1.5">
+                        <i data-lucide="award" class="w-4 h-4"></i> Mark Approved in CAB
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Start with sample demo data loaded
+        let tickets = [];
+        let currentTab = 'all';
+        let currentModalTicketId = null;
+
+        // Sample demo tickets provided for optional testing
+        const demoSampleTickets = [
+            {
+                id: "CHG0038910",
+                title: "Production Patching of August-2026 Released Microsoft Workstation Security OS Patches and O365 Patches",
+                category: "Patching & OS Updates",
+                submitter: "Alex Rivera (Infra Ops)",
+                impact: "High",
+                openedDate: "2026-08-17 14:00",
+                justification: "Monthly mandatory security patching to address critical zero-day vulnerabilities in Windows OS and Office 365 suites across 4,500 enterprise workstations.",
+                implementation: "1. Stage updates on WSUS server.\n2. Push deployment to Pilot Group 1 on Day 1.\n3. Roll out to enterprise batches over 7 days window.\n4. Verify compliance report in SCCM.",
+                risk: "High Impact. Potential reboot disruption for end users if updates fail or hang during installation.",
+                backout: "1. Stop WSUS deployment policy.\n2. Uninstall updates via PowerShell script batch `wusa /uninstall` if critical defects detected.\n3. Restore previous workstation restore point.",
+                test: "Automated post-patch test suite executed on 50 test machines. Verified Microsoft Word, Excel, Outlook, Teams, and VPN agent functionality without errors.",
+                startDate: "2026-08-18 20:00",
+                endDate: "2026-08-25 20:00",
+                outage: "No hard outage, rolling user reboots with 4-hour notification popup window.",
+                attachments: "YES",
+                notes: "Exempted from 3-day duration flag because this is enterprise OS patching.",
+                cabApproved: false,
+                isCancelled: false
+            },
+            {
+                id: "CHG0038911",
+                title: "Toggle switch for payment gateway sandbox mode in customer web portal",
+                category: "Application & Web",
+                submitter: "David Chen (DevOps)",
+                impact: "Low",
+                openedDate: "2026-08-18 08:30",
+                justification: "Need to disable sandbox toggle in web application setting.",
+                implementation: "1. Log into admin portal.\n2. Flip switch to False.",
+                risk: "Low impact. Risk is minimal.",
+                backout: "Flip switch back to True.",
+                test: "Tested in dev environment.",
+                startDate: "2026-08-18 10:00",
+                endDate: "2026-08-21 10:00",
+                outage: "None required.",
+                attachments: "NO",
+                notes: "Flagged: Simple feature toggle switch scheduled for 3 days! Needs explanation or window reduction.",
+                cabApproved: false,
+                isCancelled: false
+            },
+            {
+                id: "CHG0038912",
+                title: "Upgrading Office365 version from 2508 to 2606 for enterprise users",
+                category: "Software Upgrade",
+                submitter: "Sarah Jenkins (IT Workplace)",
+                impact: "Medium",
+                openedDate: "2026-08-17 11:15",
+                justification: "Upgrading enterprise Office 365 desktop build to 2606 for compatibility with new security features and fix Outlook memory leak.",
+                implementation: "1. Configure O365 deployment tool XML.\n2. Release update channel to Tier 1 users.\n3. Monitor telemetry logs over 7-day deployment window.\n4. Finalize ring 3 rollout.",
+                risk: "Medium Impact. Users might experience temporary application restart during download.",
+                backout: "1. Roll back O365 update channel to version 2508 using click-to-run command line `officec2rclient.exe /update user updatetoversion=16.0.2508.10000`.",
+                test: "Tested with 100 power users in IT department. All macros and add-ins verified operational.",
+                startDate: "2026-08-19 08:00",
+                endDate: "2026-08-26 08:00",
+                outage: "Brief restart of Office apps upon user consent.",
+                attachments: "YES",
+                notes: "Exempted from duration anomaly (O365 multi-day ring upgrade).",
+                cabApproved: false,
+                isCancelled: false
+            },
+            {
+                id: "CHG0038913",
+                title: "Core Router BGP Route Map Configuration Refinement",
+                category: "Network Infrastructure",
+                submitter: "Marcus Vance (NetOps)",
+                impact: "High",
+                openedDate: "2026-08-18 09:15",
+                justification: "To improve link balancing.",
+                implementation: "Will update router config.",
+                risk: "Low impact.",
+                backout: "",
+                test: "N/A",
+                startDate: "2026-08-18 11:00",
+                endDate: "2026-08-18 13:00",
+                outage: "15 minutes packet loss expected.",
+                attachments: "NO",
+                notes: "Critical defects: Impact rated Low in text but dropdown set to High! Backout plan is empty. Test plan is N/A.",
+                cabApproved: false,
+                isCancelled: false
+            }
+        ];
+
+        // Custom Notification System (Replaces alert)
+        function showNotification(msg, type = 'info') {
+            const toast = document.getElementById('toast-notification');
+            const messageEl = document.getElementById('toast-message');
+            const contentEl = document.getElementById('toast-content');
+            
+            messageEl.innerText = msg;
+            
+            if (type === 'error') {
+                contentEl.className = "flex items-center gap-3 bg-rose-950 text-rose-100 border border-rose-800 px-4 py-3 rounded-xl shadow-2xl text-xs font-medium max-w-md";
+            } else if (type === 'success') {
+                contentEl.className = "flex items-center gap-3 bg-teal-950 text-teal-100 border border-teal-800 px-4 py-3 rounded-xl shadow-2xl text-xs font-medium max-w-md";
+            } else {
+                contentEl.className = "flex items-center gap-3 bg-slate-900 text-white border border-slate-700 px-4 py-3 rounded-xl shadow-2xl text-xs font-medium max-w-md";
+            }
+
+            toast.classList.remove('hidden', 'translate-y-2');
+            
+            setTimeout(() => {
+                toast.classList.add('hidden', 'translate-y-2');
+            }, 4000);
+        }
+
+        // Custom Confirmation Dialog
+        function promptClearData() {
+            if (tickets.length === 0) {
+                showNotification("Queue is already empty.", "info");
+                return;
+            }
+            document.getElementById('confirm-modal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+        }
+
+        function executeClearData() {
+            tickets = [];
+            document.getElementById('search-input').value = '';
+            document.getElementById('date-filter').value = '';
+            document.getElementById('risk-filter').value = 'all';
+            currentTab = 'all';
+            setTab('all');
+            updateDashboard();
+            closeConfirmModal();
+            showNotification("All ticket data has been cleared.", "success");
+        }
+
+        // Manual CR Modal Functions
+        function openManualCRModal() {
+            document.getElementById('manual-cr-modal').classList.remove('hidden');
+        }
+
+        function closeManualCRModal() {
+            document.getElementById('manual-cr-modal').classList.add('hidden');
+        }
+
+        function handleManualCRSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('manual-id').value.trim();
+            const title = document.getElementById('manual-title').value.trim();
+            const submitter = document.getElementById('manual-submitter').value.trim() || "Manual Submitter";
+            const impact = document.getElementById('manual-impact').value;
+            const category = document.getElementById('manual-category').value.trim() || "Manual Entry";
+            const openedDate = document.getElementById('manual-opened').value.trim() || new Date().toISOString().substring(0,16).replace('T', ' ');
+            const isLate = document.getElementById('manual-late-toggle').checked;
+            const justification = document.getElementById('manual-justification').value.trim();
+            const implementation = document.getElementById('manual-implementation').value.trim();
+            const risk = document.getElementById('manual-risk').value.trim();
+            const backout = document.getElementById('manual-backout').value.trim();
+            const test = document.getElementById('manual-test').value.trim();
+            const datesStr = document.getElementById('manual-dates').value.trim();
+
+            const newCR = {
+                id,
+                title,
+                category,
+                submitter,
+                impact,
+                openedDate,
+                justification,
+                implementation,
+                risk,
+                backout,
+                test,
+                startDate: datesStr ? datesStr.split('|')[0] || datesStr : '',
+                endDate: datesStr ? datesStr.split('|')[1] || '' : '',
+                outage: "None specified",
+                attachments: "NO",
+                notes: isLate ? `[LATE SUBMISSION] Opened on ${openedDate}. Manually added ticket.` : "Manually added ticket.",
+                isReviewed: false,
+                riskMismatchOverride: false,
+                cabApproved: false,
+                isCancelled: false,
+                forceLate: isLate
+            };
+
+            const assessed = assessCR(newCR);
+            tickets.unshift(assessed);
+            updateDashboard();
+            closeManualCRModal();
+            document.getElementById('manual-cr-form').reset();
+            showNotification(`Successfully added manual ticket ${id}!`, "success");
+        }
+
+        function assessCR(t) {
+            let score = 100;
+            const checks = [];
+            const flags = [];
+
+            // 0. Submission Date / Cutoff Check (Cutoff: 6:00 AM EST on CAB days - Tuesday & Thursday)
+            const openedStr = (t.openedDate || t.opened || '').trim();
+            let isLate = t.forceLate || false;
+            let cutoffMsg = "";
+
+            if (!isLate && openedStr) {
+                const openedDt = new Date(openedStr);
+                if (!isNaN(openedDt.getTime())) {
+                    let targetCabDate = null;
+                    if (t.startDate) {
+                        const startDt = new Date(t.startDate);
+                        if (!isNaN(startDt.getTime())) {
+                            targetCabDate = new Date(startDt);
+                        }
+                    }
+                    if (!targetCabDate) {
+                        targetCabDate = new Date(openedDt);
+                    }
+
+                    const day = targetCabDate.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+                    const cutoffDt = new Date(targetCabDate);
+                    
+                    if (day === 2 || day === 4) { // Tue or Thu
+                        cutoffDt.setHours(6, 0, 0, 0);
+                    } else if (day === 3) { // Wed -> Target was Tue 6 AM
+                        cutoffDt.setDate(cutoffDt.getDate() - 1);
+                        cutoffDt.setHours(6, 0, 0, 0);
+                    } else if (day === 0 || day === 1) { // Sun/Mon -> Target is Tue 6 AM
+                        const daysUntilTue = (2 - day + 7) % 7;
+                        cutoffDt.setDate(cutoffDt.getDate() + daysUntilTue);
+                        cutoffDt.setHours(6, 0, 0, 0);
+                    } else { // Fri/Sat -> Target was Thu 6 AM
+                        const daysBackToThu = (day === 5) ? 1 : 2;
+                        cutoffDt.setDate(cutoffDt.getDate() - daysBackToThu);
+                        cutoffDt.setHours(6, 0, 0, 0);
+                    }
+
+                    if (openedDt > cutoffDt) {
+                        isLate = true;
+                        cutoffMsg = `Late Submission! Opened on ${openedStr}, which missed the 6:00 AM EST CAB cutoff.`;
+                    } else {
+                        cutoffMsg = `Submitted on time (${openedStr}) prior to 6:00 AM EST cutoff.`;
+                    }
+                }
+            } else if (isLate) {
+                cutoffMsg = `Flagged as Late Submission! Opened on ${openedStr || 'N/A'} (Missed 6:00 AM EST Cutoff).`;
+            }
+
+            if (isLate) {
+                score -= 15;
+                flags.push("LATE_SUBMISSION");
+                checks.push({ pass: false, msg: cutoffMsg });
+                
+                const lateTag = "[LATE SUBMISSION]";
+                if (!t.notes) {
+                    t.notes = `${lateTag} Opened on ${openedStr} (after 6:00 AM EST cutoff).`;
+                } else if (!t.notes.includes(lateTag)) {
+                    t.notes = `${lateTag} Opened on ${openedStr}. ${t.notes}`;
+                }
+            } else if (openedStr) {
+                checks.push({ pass: true, msg: cutoffMsg });
+            } else {
+                checks.push({ pass: true, msg: "Submission date ('Opened') not specified." });
+            }
+
+            // 1. Justification Check
+            const just = (t.justification || '').trim();
+            if (!just || just.length < 15) {
+                score -= 20;
+                checks.push({ pass: false, msg: "Justification is too brief or missing operational reasoning." });
+            } else {
+                checks.push({ pass: true, msg: "Justification provides adequate business context." });
+            }
+
+            // 2. Implementation Step-by-Step Check
+            const impl = (t.implementation || '').trim();
+            const hasSteps = /\d+\.|\*|-|step|first|then|next|finally/i.test(impl) || impl.length > 35;
+            if (!impl || !hasSteps) {
+                score -= 20;
+                checks.push({ pass: false, msg: "Implementation plan lacks detailed step-by-step execution instructions." });
+            } else {
+                checks.push({ pass: true, msg: "Implementation plan contains step-by-step workflow." });
+            }
+
+            // 3. Risk & Impact Analysis Match
+            const riskText = (t.risk || '').toLowerCase();
+            const selectedImpact = (t.impact || 'Medium').toLowerCase();
+            let riskMentionedImpact = 'unknown';
+            if (riskText.includes('high')) riskMentionedImpact = 'high';
+            else if (riskText.includes('medium') || riskText.includes('med')) riskMentionedImpact = 'medium';
+            else if (riskText.includes('low')) riskMentionedImpact = 'low';
+
+            if (t.riskMismatchOverride) {
+                checks.push({ pass: true, msg: "Risk & Impact mismatch: EXCEPTION GRANTED / MODIFIED by Change Manager." });
+            } else if (riskMentionedImpact !== 'unknown' && riskMentionedImpact !== selectedImpact) {
+                score -= 20;
+                flags.push("RISK_IMPACT_MISMATCH");
+                checks.push({ pass: false, msg: `Impact level mismatch! Listed impact is '${t.impact}', but Risk text specifies '${riskMentionedImpact.toUpperCase()}'.` });
+            } else {
+                checks.push({ pass: true, msg: "Risk analysis alignment matches selected Impact level." });
+            }
+
+            // 4. Backout Plan Check
+            const backout = (t.backout || '').trim();
+            let missingBackoutOrTest = false;
+            if (!backout || backout.length < 10 || /none|n\/a|no backout|no rollback/i.test(backout)) {
+                score -= 25;
+                missingBackoutOrTest = true;
+                checks.push({ pass: false, msg: "Backout / Rollback plan is missing or empty! (Mandatory requirement)" });
+            } else {
+                checks.push({ pass: true, msg: "Backout / Rollback plan is clearly defined." });
+            }
+
+            // 5. Test & Validation Plan Check
+            const test = (t.test || '').trim();
+            if (!test || test.length < 10 || /n\/a|none|no test/i.test(test)) {
+                score -= 15;
+                missingBackoutOrTest = true;
+                checks.push({ pass: false, msg: "Test & Validation plan is empty or marked N/A." });
+            } else {
+                checks.push({ pass: true, msg: "Test & Validation plan is specified." });
+            }
+
+            if (missingBackoutOrTest) {
+                flags.push("MISSING_PLAN");
+            }
+
+            // 6. Typo & Grammar Check
+            const fullText = `${t.title} ${t.justification} ${t.implementation} ${t.risk} ${t.backout} ${t.test}`;
+            const typoMatches = fullText.match(/\b(teh|recieve|seperate|impac|justificaton|shetdule|tbd|pls|thx)\b/gi);
+            if (typoMatches && typoMatches.length > 0) {
+                const uniqueTypos = [...new Set(typoMatches.map(m => m.toLowerCase()))];
+                score -= 5;
+                checks.push({ pass: false, msg: `Potential spelling/grammar issues detected: [${uniqueTypos.join(', ')}].` });
+            } else {
+                checks.push({ pass: true, msg: "Spelling and formatting appear clean." });
+            }
+
+            // 7. Schedule Duration Anomaly Check & Patching Exemption
+            let durationDays = 0;
+            if (t.startDate && t.endDate) {
+                const start = new Date(t.startDate);
+                const end = new Date(t.endDate);
+                if (!isNaN(start) && !isNaN(end)) {
+                    const diffMs = end - start;
+                    durationDays = diffMs / (1000 * 60 * 60 * 24);
+                }
+            }
+
+            const titleDescCombined = `${t.title} ${t.justification}`.toLowerCase();
+            const isPatchingOrO365Exempt = /patch|patching|o365|office365|workstation|2508|2606|microsoft security|os patch/i.test(titleDescCombined);
+            const isSimpleToggleSwitch = /toggle|switch|simple config|flag/i.test(titleDescCombined);
+
+            if (durationDays > 2 && isSimpleToggleSwitch && !isPatchingOrO365Exempt) {
+                score -= 20;
+                flags.push("LONG_DURATION_TOGGLE");
+                checks.push({ pass: false, msg: `Duration Anomaly Flag: Simple toggle/switch is scheduled for ${durationDays.toFixed(1)} days! Should be reduced unless justified.` });
+            } else if (isPatchingOrO365Exempt && durationDays >= 5) {
+                checks.push({ pass: true, msg: `Schedule duration is ${durationDays.toFixed(1)} days, but EXEMPTED because this is OS/O365 enterprise patching.` });
+            } else if (durationDays > 0) {
+                checks.push({ pass: true, msg: `Schedule window duration (${durationDays.toFixed(1)} days) is within standard parameters.` });
+            } else {
+                checks.push({ pass: true, msg: "Schedule dates loaded." });
+            }
+
+            // Calculate RAG Status
+            let rag = 'GREEN';
+            if (t.isCancelled) {
+                rag = 'CANCELLED';
+            } else if (t.isReviewed) {
+                rag = 'GREEN';
+            } else if (score >= 85) {
+                rag = 'GREEN';
+            } else if (score >= 60) {
+                rag = 'YELLOW';
+            } else {
+                rag = 'RED';
+            }
+
+            // Submitter Interview Questions Generation
+            const questions = [];
+            if (isLate) {
+                questions.push(`This ticket was opened late on ${openedStr} (after the 6:00 AM EST cutoff). What caused the submission delay?`);
+            }
+            if (!t.backout || t.backout.length < 10) {
+                questions.push("What specific command or steps will you take if the change fails and you need to rollback immediately?");
+            }
+            if (flags.includes("LONG_DURATION_TOGGLE")) {
+                questions.push(`Why does this simple switch/toggle modification require a ${durationDays.toFixed(1)}-day schedule window instead of a standard 1-hour window?`);
+            }
+            if (selectedImpact === 'high') {
+                questions.push("Since this is marked as High Impact, have you communicated with business stakeholder leads regarding potential service interruption?");
+            }
+            if (!t.test || /n\/a/i.test(t.test)) {
+                questions.push("How will you verify that business services are functioning normally after implementation finishes?");
+            }
+            if (questions.length < 2) {
+                questions.push("What is your contingency plan if implementation runs past the planned schedule window?");
+                questions.push("Has this change been successfully validated in a non-production or staging environment?");
+            }
+
+            t.score = Math.max(score, 0);
+            t.rag = rag;
+            t.checks = checks;
+            t.flags = flags;
+            t.questions = questions;
+            t.calculatedDurationDays = durationDays > 0 ? durationDays.toFixed(1) : "N/A";
+
+            return t;
+        }
+
+        // Initialize state on load
+        window.onload = function() {
+            loadDemoSampleData();
+        };
+
+        function updateDashboard() {
+            renderStats();
+            renderTrends();
+            renderCRList();
+        }
+
+        function renderStats() {
+            const total = tickets.length;
+            const green = tickets.filter(t => !t.isCancelled && (t.rag === 'GREEN' || t.isReviewed) && !t.cabApproved).length;
+            const yellow = tickets.filter(t => !t.isCancelled && t.rag === 'YELLOW' && !t.isReviewed && !t.cabApproved).length;
+            const red = tickets.filter(t => !t.isCancelled && t.rag === 'RED' && !t.isReviewed && !t.cabApproved).length;
+            const approved = tickets.filter(t => !t.isCancelled && t.cabApproved).length;
+
+            document.getElementById('stat-total').innerText = total;
+            document.getElementById('stat-green').innerText = green;
+            document.getElementById('stat-yellow').innerText = yellow;
+            document.getElementById('stat-red').innerText = red;
+            document.getElementById('stat-approved').innerText = approved;
+
+            document.getElementById('tab-count-all').innerText = total;
+            document.getElementById('tab-count-green').innerText = green;
+            document.getElementById('tab-count-yellow').innerText = yellow;
+            document.getElementById('tab-count-red').innerText = red;
+            document.getElementById('tab-count-approved').innerText = approved;
+
+            if (total > 0) {
+                document.getElementById('bar-total').style.width = '100%';
+                document.getElementById('bar-green').style.width = `${(green / total) * 100}%`;
+                document.getElementById('bar-yellow').style.width = `${(yellow / total) * 100}%`;
+                document.getElementById('bar-red').style.width = `${(red / total) * 100}%`;
+                document.getElementById('bar-approved').style.width = `${(approved / total) * 100}%`;
+            } else {
+                document.getElementById('bar-total').style.width = '0%';
+                document.getElementById('bar-green').style.width = '0%';
+                document.getElementById('bar-yellow').style.width = '0%';
+                document.getElementById('bar-red').style.width = '0%';
+                document.getElementById('bar-approved').style.width = '0%';
+            }
+        }
+
+        function renderTrends() {
+            const total = tickets.length;
+            if (total === 0) {
+                document.getElementById('trend-late-count').innerText = "0";
+                document.getElementById('trend-late-pct').innerText = "(0% of total)";
+                document.getElementById('trend-risk-mismatch').innerText = "0";
+                document.getElementById('trend-duration-flags').innerText = "0";
+                document.getElementById('trend-missing-plans').innerText = "0";
+                document.getElementById('trend-summary-text').innerText = "Upload a change request spreadsheet or add manual CRs to generate trend telemetry.";
+                return;
+            }
+
+            const lateCount = tickets.filter(t => t.flags && t.flags.includes("LATE_SUBMISSION")).length;
+            const latePct = ((lateCount / total) * 100).toFixed(0);
+            const riskMismatchCount = tickets.filter(t => t.flags && t.flags.includes("RISK_IMPACT_MISMATCH")).length;
+            const durationFlagCount = tickets.filter(t => t.flags && t.flags.includes("LONG_DURATION_TOGGLE")).length;
+            const missingPlanCount = tickets.filter(t => t.flags && t.flags.includes("MISSING_PLAN")).length;
+
+            document.getElementById('trend-late-count').innerText = lateCount;
+            document.getElementById('trend-late-pct').innerText = `(${latePct}% of total batch)`;
+            document.getElementById('trend-risk-mismatch').innerText = riskMismatchCount;
+            document.getElementById('trend-duration-flags').innerText = durationFlagCount;
+            document.getElementById('trend-missing-plans').innerText = missingPlanCount;
+
+            let summary = "";
+            if (lateCount > 0 && lateCount / total >= 0.25) {
+                summary = `⚠️ High Late Submission Trend: ${latePct}% of tickets missed the 6:00 AM EST cutoff. Submitter teams should be reminded of the CAB SLA window.`;
+            } else if (missingPlanCount > 0) {
+                summary = `⚠️ Governance Notice: ${missingPlanCount} ticket(s) lack required Backout or Validation plans. Address these during CAB call.`;
+            } else if (durationFlagCount > 0) {
+                summary = `ℹ️ Schedule Anomaly: ${durationFlagCount} ticket(s) scheduled for multi-day windows without patching exemptions.`;
+            } else {
+                summary = `✅ Excellent Batch Compliance: Submissions adhere to the 6:00 AM EST cutoff and governance requirements.`;
+            }
+
+            document.getElementById('trend-summary-text').innerText = summary;
+        }
+
+        function clearDateFilter() {
+            const dateInput = document.getElementById('date-filter');
+            if (dateInput) {
+                dateInput.value = '';
+                renderCRList();
+            }
+        }
+
+        function setTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn px-4 py-2 rounded-xl text-xs font-medium transition flex items-center gap-2 bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-teal-500/50";
+            });
+
+            const activeBtn = document.getElementById(`tab-${tab}`);
+            if (activeBtn) {
+                activeBtn.className = "tab-btn active px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 bg-teal-600 text-white shadow-sm";
+            }
+            renderCRList();
+        }
+
+        function renderCRList() {
+            const container = document.getElementById('cr-list-container');
+            const searchVal = (document.getElementById('search-input').value || '').toLowerCase();
+            const riskVal = document.getElementById('risk-filter').value;
+            const dateVal = document.getElementById('date-filter').value;
+
+            let filtered = tickets.filter(t => {
+                // Tab filter
+                if (currentTab === 'green' && (t.isCancelled || (!t.isReviewed && t.rag !== 'GREEN') || t.cabApproved)) return false;
+                if (currentTab === 'yellow' && (t.isCancelled || t.isReviewed || t.rag !== 'YELLOW' || t.cabApproved)) return false;
+                if (currentTab === 'red' && (t.isCancelled || t.isReviewed || t.rag !== 'RED' || t.cabApproved)) return false;
+                if (currentTab === 'approved' && (t.isCancelled || !t.cabApproved)) return false;
+
+                // Search filter
+                if (searchVal) {
+                    const matchStr = `${t.id} ${t.title} ${t.submitter} ${t.category} ${t.justification}`.toLowerCase();
+                    if (!matchStr.includes(searchVal)) return false;
+                }
+
+                // Risk Filter
+                if (riskVal !== 'all' && (t.impact || '').toLowerCase() !== riskVal.toLowerCase()) return false;
+
+                // Date Filter
+                if (dateVal) {
+                    const crStart = (t.startDate || '').substring(0, 10);
+                    const crEnd = (t.endDate || '').substring(0, 10);
+                    if (crStart !== dateVal && crEnd !== dateVal) return false;
+                }
+
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-12 text-center my-6 shadow-sm">
+                        <i data-lucide="inbox" class="w-10 h-10 text-slate-400 mx-auto mb-3"></i>
+                        <h3 class="text-sm font-semibold text-slate-800">${tickets.length === 0 ? 'No CAB Tickets Loaded' : 'No Change Requests Found'}</h3>
+                        <p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">${tickets.length === 0 ? 'Upload your ServiceNow or ITSM Excel spreadsheet (.xlsx) above or add manual CRs to run governance checks and review tickets.' : 'Try adjusting your search criteria, category tab, or date filter.'}</p>
+                        ${tickets.length === 0 ? `
+                            <div class="flex items-center justify-center gap-2 mt-4">
+                                <button onclick="openManualCRModal()" class="bg-teal-600 hover:bg-teal-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold transition shadow-sm inline-flex items-center gap-1.5">
+                                    <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Add Manual CR
+                                </button>
+                                <button onclick="loadDemoSampleData()" class="bg-teal-800 hover:bg-teal-900 text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold transition shadow-sm inline-flex items-center gap-1.5">
+                                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Load Sample Demo Data
+                                </button>
+                            </div>
+                        ` : (dateVal ? `
+                            <button onclick="clearDateFilter()" class="mt-4 bg-teal-600 hover:bg-teal-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold transition shadow-sm">
+                                Clear Date Filter
+                            </button>
+                        ` : '')}
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = filtered.map(t => {
+                let ragColor = t.cabApproved ? 'teal' : (t.rag === 'GREEN' ? 'emerald' : (t.rag === 'YELLOW' ? 'amber' : 'rose'));
+                let ragBadgeBg = t.cabApproved 
+                    ? 'bg-teal-100 text-teal-800 border-teal-300' 
+                    : (t.rag === 'GREEN' 
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
+                        : (t.rag === 'YELLOW' 
+                            ? 'bg-amber-100 text-amber-800 border-amber-300' 
+                            : 'bg-rose-100 text-rose-800 border-rose-300'));
+
+                let ragText = t.cabApproved ? 'CAB APPROVED' : (t.rag === 'GREEN' ? 'READY FOR CAB' : (t.rag === 'YELLOW' ? 'MINOR MODIFICATION' : 'REJECT / REVISE'));
+
+                if (t.isCancelled) {
+                    ragColor = 'slate';
+                    ragBadgeBg = 'bg-slate-200 text-slate-700 border-slate-300';
+                    ragText = 'CANCELLED';
+                }
+
+                const hasScheduleFlag = t.flags && t.flags.includes("LONG_DURATION_TOGGLE");
+                const isLateSubmission = t.flags && t.flags.includes("LATE_SUBMISSION");
+
+                return `
+                    <div class="bg-white border ${t.isCancelled ? 'border-slate-300 bg-slate-50/50 opacity-80' : 'border-slate-200 hover:border-teal-500'} rounded-2xl p-5 transition-all shadow-sm group relative">
+                        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                            
+                            <!-- Left Details Section -->
+                            <div class="flex items-start gap-4 flex-1">
+                                <div class="flex flex-col items-center justify-center shrink-0 p-2 bg-slate-50 rounded-xl border border-slate-200 min-w-[60px]">
+                                    <span class="w-3 h-3 rounded-full bg-${ragColor}-500 mb-1"></span>
+                                    <span class="text-[10px] font-mono font-bold text-slate-500">Score</span>
+                                    <span class="text-sm font-bold text-${ragColor}-700 font-display">${t.isCancelled ? '—' : t.score}</span>
+                                </div>
+
+                                <div class="space-y-1 flex-1">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <!-- Highlighted Ticket CR Number -->
+                                        <span class="text-xs font-mono font-bold text-teal-800 bg-teal-50 border border-teal-300 px-2.5 py-0.5 rounded-lg shadow-2xs">${t.id}</span>
+                                        <span class="px-2.5 py-0.5 text-[10px] font-bold border rounded-full ${ragBadgeBg}">${ragText}</span>
+                                        ${t.isReviewed && !t.isCancelled ? `
+                                            <span class="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                                                <i data-lucide="check-circle-2" class="w-3 h-3 text-emerald-600"></i> REVIEWED (READY FOR CAB)
+                                            </span>
+                                        ` : ''}
+                                        <span class="text-xs text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full">${t.category}</span>
+                                        <span class="text-xs font-medium px-2 py-0.5 rounded ${t.impact === 'High' ? 'bg-rose-100 text-rose-800 border border-rose-200' : (t.impact === 'Medium' ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-slate-100 text-slate-700')}">
+                                            ${t.impact} Impact
+                                        </span>
+                                        ${isLateSubmission && !t.isCancelled ? `
+                                            <span class="text-[11px] bg-rose-100 text-rose-900 border border-rose-300 px-2 py-0.5 rounded-full flex items-center gap-1 font-semibold">
+                                                <i data-lucide="clock-alert" class="w-3 h-3 text-rose-600"></i> Late Submission
+                                            </span>
+                                        ` : ''}
+                                        ${hasScheduleFlag && !t.isCancelled ? `
+                                            <span class="text-[11px] bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full flex items-center gap-1 font-semibold">
+                                                <i data-lucide="alert-triangle" class="w-3 h-3 text-amber-600"></i> Flagged: Scheduled ${t.calculatedDurationDays} Days
+                                            </span>
+                                        ` : ''}
+                                    </div>
+
+                                    <h3 class="text-base font-bold font-display ${t.isCancelled ? 'text-slate-500 line-through' : 'text-slate-900 group-hover:text-teal-700'} transition-colors">${t.title}</h3>
+
+                                    <div class="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-500 pt-1">
+                                        <span class="flex items-center gap-1"><i data-lucide="user" class="w-3.5 h-3.5 text-slate-400"></i> ${t.submitter}</span>
+                                        <span class="flex items-center gap-1"><i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i> Opened: <strong class="text-slate-700">${t.openedDate || 'N/A'}</strong></span>
+                                        <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i> Schedule: ${t.startDate || 'Unscheduled'} - ${t.endDate || 'Unscheduled'}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right Quick Actions & Attachments Toggle -->
+                            <div class="flex flex-col sm:flex-row lg:flex-col items-end justify-between gap-3 border-t lg:border-t-0 border-slate-100 pt-3 lg:pt-0 shrink-0">
+                                
+                                <!-- Attachments Button Group (YES / NO / NA) -->
+                                <div class="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-200">
+                                    <span class="text-[10px] uppercase font-bold text-slate-500 px-2">Attach:</span>
+                                    <button onclick="setAttachment('${t.id}', 'YES')" class="px-2.5 py-1 text-[10px] font-bold rounded-lg transition ${t.attachments === 'YES' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}">YES</button>
+                                    <button onclick="setAttachment('${t.id}', 'NO')" class="px-2.5 py-1 text-[10px] font-bold rounded-lg transition ${t.attachments === 'NO' ? 'bg-rose-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}">NO</button>
+                                    <button onclick="setAttachment('${t.id}', 'NA')" class="px-2.5 py-1 text-[10px] font-bold rounded-lg transition ${t.attachments === 'NA' ? 'bg-slate-300 text-slate-800' : 'text-slate-600 hover:text-slate-900'}">N/A</button>
+                                </div>
+
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <!-- Cancelled Toggle Button -->
+                                    <button onclick="toggleCancelled('${t.id}')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${t.isCancelled ? 'bg-slate-700 text-white shadow-sm' : 'bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-300'}" title="Mark Change Request as Cancelled">
+                                        <i data-lucide="ban" class="w-3.5 h-3.5 ${t.isCancelled ? 'text-rose-400' : ''}"></i>
+                                        <span>${t.isCancelled ? 'Cancelled' : 'Cancel CR'}</span>
+                                    </button>
+
+                                    <button onclick="toggleReviewed('${t.id}')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${t.isReviewed ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-300'}">
+                                        <i data-lucide="${t.isReviewed ? 'check-circle-2' : 'clipboard-check'}" class="w-3.5 h-3.5"></i>
+                                        <span>${t.isReviewed ? 'Reviewed' : 'Mark Reviewed'}</span>
+                                    </button>
+
+                                    <button onclick="toggleApproval('${t.id}')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${t.cabApproved ? 'bg-teal-100 text-teal-800 border border-teal-300 hover:bg-teal-200' : 'bg-slate-100 hover:bg-teal-600 hover:text-white text-teal-700 border border-teal-300'}">
+                                        <i data-lucide="${t.cabApproved ? 'check-check' : 'check'}" class="w-3.5 h-3.5"></i>
+                                        <span>${t.cabApproved ? 'Approved' : 'CAB Approve'}</span>
+                                    </button>
+
+                                    <button onclick="openModal('${t.id}')" class="bg-teal-700 hover:bg-teal-800 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                                        <i data-lucide="eye" class="w-3.5 h-3.5"></i> Review
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notes Bar -->
+                        <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                            <div class="flex items-center gap-2 flex-1 mr-4 overflow-hidden">
+                                <i data-lucide="message-square" class="w-3.5 h-3.5 text-teal-600 shrink-0"></i>
+                                <input type="text" value="${t.notes || ''}" placeholder="Click to add review notes..." onchange="updateNotes('${t.id}', this.value)" class="bg-transparent text-slate-800 placeholder-slate-400 focus:outline-none w-full text-xs">
+                            </div>
+                            <span class="text-[10px] text-slate-400 shrink-0 font-medium">${t.checks.filter(c=>!c.pass).length} Governance Warning(s)</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        function openModal(id) {
+            const t = tickets.find(x => x.id === id);
+            if (!t) return;
+            currentModalTicketId = id;
+
+            document.getElementById('modal-cr-id').innerText = t.id;
+            document.getElementById('modal-category').innerText = t.category;
+            document.getElementById('modal-title').innerText = t.title;
+            document.getElementById('modal-submitter').innerText = t.submitter;
+            document.getElementById('modal-impact').innerText = t.impact;
+            document.getElementById('modal-opened-date').innerText = t.openedDate || 'N/A';
+
+            const badge = document.getElementById('modal-rag-badge');
+            if (t.isCancelled) {
+                badge.innerText = "CANCELLED";
+                badge.className = "px-2.5 py-1 text-xs font-bold rounded-lg uppercase tracking-wider shrink-0 mt-0.5 bg-slate-200 text-slate-700 border border-slate-300";
+            } else if (t.cabApproved) {
+                badge.innerText = "CAB APPROVED";
+                badge.className = "px-2.5 py-1 text-xs font-bold rounded-lg uppercase tracking-wider shrink-0 mt-0.5 bg-teal-100 text-teal-800 border border-teal-300";
+            } else if (t.rag === 'GREEN') {
+                badge.innerText = "READY FOR CAB";
+                badge.className = "px-2.5 py-1 text-xs font-bold rounded-lg uppercase tracking-wider shrink-0 mt-0.5 bg-emerald-100 text-emerald-800 border border-emerald-300";
+            } else if (t.rag === 'YELLOW') {
+                badge.innerText = "MINOR MODIFICATION";
+                badge.className = "px-2.5 py-1 text-xs font-bold rounded-lg uppercase tracking-wider shrink-0 mt-0.5 bg-amber-100 text-amber-800 border border-amber-300";
+            } else {
+                badge.innerText = "REJECT / REVISE";
+                badge.className = "px-2.5 py-1 text-xs font-bold rounded-lg uppercase tracking-wider shrink-0 mt-0.5 bg-rose-100 text-rose-800 border border-rose-300";
+            }
+
+            const scheduleAlert = document.getElementById('modal-schedule-alert');
+            if (t.flags && t.flags.includes("LONG_DURATION_TOGGLE") && !t.isCancelled) {
+                scheduleAlert.classList.remove('hidden');
+                scheduleAlert.innerText = `Duration Flagged (${t.calculatedDurationDays} Days)`;
+            } else {
+                scheduleAlert.classList.add('hidden');
+            }
+
+            // Populate Governance Checks
+            const checksList = document.getElementById('modal-checks-list');
+            checksList.innerHTML = t.checks.map(c => `
+                <div class="flex items-start gap-2 ${c.pass ? 'text-slate-700' : 'text-rose-700 font-medium'}">
+                    <i data-lucide="${c.pass ? 'check-circle-2' : 'alert-circle'}" class="w-4 h-4 shrink-0 mt-0.5 ${c.pass ? 'text-emerald-600' : 'text-rose-600'}"></i>
+                    <span>${c.msg}</span>
+                </div>
+            `).join('');
+
+            document.getElementById('modal-justification').innerText = t.justification || 'N/A';
+            document.getElementById('modal-implementation').innerText = t.implementation || 'N/A';
+            document.getElementById('modal-risk').innerText = t.risk || 'N/A';
+            document.getElementById('modal-backout').innerText = t.backout || 'N/A';
+            document.getElementById('modal-test').innerText = t.test || 'N/A';
+            document.getElementById('modal-dates').innerText = `${t.startDate || 'Unscheduled'} to ${t.endDate || 'Unscheduled'}`;
+            document.getElementById('modal-duration').innerText = `${t.calculatedDurationDays} Days`;
+            document.getElementById('modal-outage').innerText = t.outage || 'None specified';
+
+            // Populate Submitter Questions
+            const qList = document.getElementById('modal-questions');
+            qList.innerHTML = t.questions.map(q => `<li>${q}</li>`).join('');
+
+            document.getElementById('modal-notes-input').value = t.notes || '';
+
+            // Risk Override Button State in Modal
+            const riskOverrideBtn = document.getElementById('modal-risk-override-btn');
+            if (t.riskMismatchOverride) {
+                riskOverrideBtn.className = "px-2.5 py-1 text-[10px] font-bold rounded-lg transition bg-teal-700 text-white shadow-sm border border-teal-800";
+                riskOverrideBtn.innerText = "✓ Exception Granted";
+            } else {
+                riskOverrideBtn.className = "px-2.5 py-1 text-[10px] font-bold rounded-lg transition bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300";
+                riskOverrideBtn.innerText = "Grant Risk Exception / Mark Modified";
+            }
+
+            // Cancelled Button State in Modal
+            const cancelBtn = document.getElementById('modal-cancel-btn');
+            if (t.isCancelled) {
+                cancelBtn.className = "bg-slate-700 text-white font-bold px-3 py-2 rounded-xl text-xs transition border border-slate-800 flex items-center gap-1 shadow-sm";
+                cancelBtn.innerHTML = `<i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-rose-300"></i> Restore CR (Uncancel)`;
+            } else {
+                cancelBtn.className = "bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 font-bold px-3 py-2 rounded-xl text-xs transition border border-slate-300 flex items-center gap-1";
+                cancelBtn.innerHTML = `<i data-lucide="ban" class="w-3.5 h-3.5 text-rose-600"></i> Cancel CR`;
+            }
+
+            // Reviewed Button State in Modal
+            const reviewBtn = document.getElementById('modal-review-btn');
+            if (t.isReviewed) {
+                reviewBtn.className = "bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition shadow-md flex items-center gap-1.5";
+                reviewBtn.innerHTML = `<i data-lucide="check-circle-2" class="w-4 h-4"></i> Reviewed (In Ready Tab)`;
+            } else {
+                reviewBtn.className = "bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition shadow-md flex items-center gap-1.5";
+                reviewBtn.innerHTML = `<i data-lucide="clipboard-check" class="w-4 h-4"></i> Mark Reviewed & Move to Ready`;
+            }
+
+            // Attachment Buttons in Modal
+            renderModalAttachmentButtons(t);
+
+            // Approve Button State in Modal
+            const approveBtn = document.getElementById('modal-approve-btn');
+            if (t.cabApproved) {
+                approveBtn.className = "bg-amber-600 hover:bg-amber-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition shadow-md flex items-center gap-1.5";
+                approveBtn.innerHTML = `<i data-lucide="rotate-ccw" class="w-4 h-4"></i> Revoke Approval`;
+            } else {
+                approveBtn.className = "bg-teal-700 hover:bg-teal-800 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition shadow-md flex items-center gap-1.5";
+                approveBtn.innerHTML = `<i data-lucide="award" class="w-4 h-4"></i> Mark Approved in CAB`;
+            }
+
+            document.getElementById('cr-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function toggleCancelled(id) {
+            const t = tickets.find(x => x.id === id);
+            if (t) {
+                t.isCancelled = !t.isCancelled;
+                
+                if (t.isCancelled) {
+                    const tag = "[CANCELLED]";
+                    if (!t.notes) {
+                        t.notes = tag;
+                    } else if (!t.notes.includes(tag)) {
+                        t.notes = `${tag} ${t.notes}`;
+                    }
+                }
+
+                assessCR(t);
+                updateDashboard();
+                showNotification(t.isCancelled ? `Ticket ${t.id} marked as CANCELLED.` : `Ticket ${t.id} restored from cancelled state.`, "info");
+            }
+        }
+
+        function toggleModalCancelled() {
+            if (!currentModalTicketId) return;
+            toggleCancelled(currentModalTicketId);
+            openModal(currentModalTicketId);
+        }
+
+        function toggleReviewed(id) {
+            const t = tickets.find(x => x.id === id);
+            if (t) {
+                t.isReviewed = !t.isReviewed;
+                assessCR(t);
+                updateDashboard();
+                showNotification(t.isReviewed ? `Ticket ${t.id} marked as REVIEWED and moved to 'Ready for CAB'!` : `Ticket ${t.id} review status cleared.`, "success");
+            }
+        }
+
+        function toggleModalReviewed() {
+            if (!currentModalTicketId) return;
+            toggleReviewed(currentModalTicketId);
+            openModal(currentModalTicketId);
+        }
+
+        function toggleRiskMismatchOverride(id) {
+            const t = tickets.find(x => x.id === id);
+            if (t) {
+                t.riskMismatchOverride = !t.riskMismatchOverride;
+                
+                if (t.riskMismatchOverride) {
+                    const tag = "[RISK EXCEPTION GRANTED]";
+                    if (!t.notes) {
+                        t.notes = tag;
+                    } else if (!t.notes.includes(tag)) {
+                        t.notes = `${tag} ${t.notes}`;
+                    }
+                }
+
+                assessCR(t);
+                updateDashboard();
+                showNotification(t.riskMismatchOverride ? `Risk & Impact mismatch exception granted for ${t.id}` : `Risk exception removed for ${t.id}`, "info");
+            }
+        }
+
+        function toggleRiskMismatchOverrideFromModal() {
+            if (!currentModalTicketId) return;
+            toggleRiskMismatchOverride(currentModalTicketId);
+            openModal(currentModalTicketId);
+        }
+
+        function renderModalAttachmentButtons(t) {
+            const container = document.getElementById('modal-attachment-buttons');
+            container.innerHTML = `
+                <button onclick="setAttachment('${t.id}', 'YES')" class="px-2.5 py-1 text-[10px] font-bold rounded-lg transition ${t.attachments === 'YES' ? 'bg-teal-600 text-white shadow-sm' : 'bg-slate-200 text-slate-700'}">YES</button>
+                <button onclick="setAttachment('${t.id}', 'NO')" class="px-2.5 py-1 text-[10px] font-bold rounded-lg transition ${t.attachments === 'NO' ? 'bg-rose-600 text-white shadow-sm' : 'bg-slate-200 text-slate-700'}">NO</button>
+                <button onclick="setAttachment('${t.id}', 'NA')" class="px-2.5 py-1 text-[10px] font-bold rounded-lg transition ${t.attachments === 'NA' ? 'bg-slate-400 text-white shadow-sm' : 'bg-slate-200 text-slate-700'}">N/A</button>
+            `;
+        }
+
+        function closeModal() {
+            document.getElementById('cr-modal').classList.add('hidden');
+            currentModalTicketId = null;
+        }
+
+        function saveModalNotes() {
+            if (!currentModalTicketId) return;
+            const text = document.getElementById('modal-notes-input').value;
+            updateNotes(currentModalTicketId, text);
+            closeModal();
+        }
+
+        function toggleModalApproval() {
+            if (!currentModalTicketId) return;
+            toggleApproval(currentModalTicketId);
+            openModal(currentModalTicketId);
+        }
+
+        function setAttachment(id, val) {
+            const t = tickets.find(x => x.id === id);
+            if (t) {
+                t.attachments = val;
+                renderCRList();
+                if (currentModalTicketId === id) {
+                    renderModalAttachmentButtons(t);
+                }
+            }
+        }
+
+        function toggleApproval(id) {
+            const t = tickets.find(x => x.id === id);
+            if (t) {
+                t.cabApproved = !t.cabApproved;
+                if (t.cabApproved && typeof confetti === 'function') {
+                    confetti({
+                        particleCount: 80,
+                        spread: 60,
+                        origin: { y: 0.7 }
+                    });
+                }
+                updateDashboard();
+            }
+        }
+
+        function updateNotes(id, text) {
+            const t = tickets.find(x => x.id === id);
+            if (t) {
+                t.notes = text;
+            }
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    const rawMatrix = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "", raw: false });
+
+                    if (!rawMatrix || rawMatrix.length === 0) {
+                        showNotification("The uploaded Excel file contains no readable data.", "error");
+                        return;
+                    }
+
+                    let headerRowIndex = 0;
+                    const headerKeywords = ['number', 'cr', 'ticket', 'title', 'summary', 'description', 'justification', 'impact', 'risk', 'backout', 'test', 'implementation', 'start', 'end', 'submitter', 'requested', 'owner', 'opened', 'created', 'submitted', 'submission'];
+
+                    for (let r = 0; r < Math.min(rawMatrix.length, 12); r++) {
+                        const rowText = rawMatrix[r].map(cell => String(cell).toLowerCase()).join(' ');
+                        let matchCount = 0;
+                        headerKeywords.forEach(kw => {
+                            if (rowText.includes(kw)) matchCount++;
+                        });
+                        if (matchCount >= 2) {
+                            headerRowIndex = r;
+                            break;
+                        }
+                    }
+
+                    const headers = rawMatrix[headerRowIndex].map(h => String(h).trim());
+                    const dataRows = rawMatrix.slice(headerRowIndex + 1);
+
+                    const normalizeStr = str => String(str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+                    const parsedTickets = [];
+
+                    dataRows.forEach((row, rowIndex) => {
+                        if (!row || row.every(cell => String(cell).trim() === "")) return;
+
+                        const rowObj = {};
+                        headers.forEach((h, colIdx) => {
+                            if (h) {
+                                rowObj[h] = row[colIdx] !== undefined ? String(row[colIdx]).trim() : "";
+                            }
+                        });
+
+                        const getFieldValue = (synonyms) => {
+                            for (let syn of synonyms) {
+                                const normSyn = normalizeStr(syn);
+                                for (let key in rowObj) {
+                                    if (normalizeStr(key) === normSyn && rowObj[key]) {
+                                        return rowObj[key];
+                                    }
+                                }
+                            }
+                            for (let syn of synonyms) {
+                                const normSyn = normalizeStr(syn);
+                                for (let key in rowObj) {
+                                    const normKey = normalizeStr(key);
+                                    if ((normKey.includes(normSyn) || normSyn.includes(normKey)) && normKey.length >= 3 && rowObj[key]) {
+                                        return rowObj[key];
+                                    }
+                                }
+                            }
+                            return "";
+                        };
+
+                        let id = getFieldValue(["Number", "Ticket Number", "CR Number", "Ticket", "CR", "Change Request", "Change Number", "CR #", "Ticket #", "ID", "Sys ID", "Reference", "No."]);
+
+                        if (!id) {
+                            for (let cell of row) {
+                                const strVal = String(cell).trim();
+                                if (/^(CHG|CR|REQ|INC|TASK|TKT|NO)[\w-]{3,}/i.test(strVal)) {
+                                    id = strVal;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (!id) {
+                            const firstCell = row.find(c => String(c).trim() !== "");
+                            id = firstCell ? String(firstCell).trim() : `CR-2026-${1000 + rowIndex + 1}`;
+                        }
+
+                        const title = getFieldValue(["Short description", "Title", "Summary", "Description", "Change Title", "Name", "Subject"]) || `Change Request ${id}`;
+                        const category = getFieldValue(["Category", "Type", "Change Type", "Classification", "Service", "Configuration Item", "CI"]) || "Infrastructure";
+                        const submitter = getFieldValue(["Requested by", "Submitter", "Owner", "Assigned to", "Author", "Created by", "Implementer", "Contact"]) || "Unassigned Submitter";
+                        const impact = getFieldValue(["Impact", "Impact Level", "Severity", "Priority", "Urgency"]) || "Medium";
+                        const openedDate = getFieldValue(["Opened", "Opened date", "Created", "Created Date", "Submission Date", "Submitted", "Date Created", "Opened on", "Created on"]) || "";
+                        const justification = getFieldValue(["Justification", "Business Justification", "Reason", "Reason for change", "Business Reason", "Purpose"]) || "";
+                        const implementation = getFieldValue(["Implementation plan", "Implementation", "Steps", "Execution Steps", "Rollout plan", "Deployment plan"]) || "";
+                        const risk = getFieldValue(["Risk and impact analysis", "Risk", "Risk Analysis", "Risk Assessment", "Risk Description"]) || "";
+                        const backout = getFieldValue(["Backout plan", "Backout", "Rollback", "Rollback plan", "Revert plan"]) || "";
+                        const test = getFieldValue(["Test plan", "Test", "Validation", "Validation plan", "Testing"]) || "";
+                        const startDate = getFieldValue(["Planned start date", "Planned start", "Start date", "Start", "Scheduled start", "Start Time"]) || "";
+                        const endDate = getFieldValue(["Planned end date", "Planned end", "End date", "End", "Scheduled end", "End Time"]) || "";
+                        const outage = getFieldValue(["Outage", "Outage details", "Downtime", "Service Outage"]) || "None";
+
+                        parsedTickets.push({
+                            id,
+                            title,
+                            category,
+                            submitter,
+                            impact,
+                            openedDate,
+                            justification,
+                            implementation,
+                            risk,
+                            backout,
+                            test,
+                            startDate,
+                            endDate,
+                            outage,
+                            attachments: "NO",
+                            notes: "",
+                            isReviewed: false,
+                            riskMismatchOverride: false,
+                            cabApproved: false,
+                            isCancelled: false
+                        });
+                    });
+
+                    if (parsedTickets.length === 0) {
+                        showNotification("No valid change request rows could be extracted from the uploaded spreadsheet.", "error");
+                        return;
+                    }
+
+                    tickets = parsedTickets.map(assessCR);
+                    updateDashboard();
+                    showNotification(`Successfully imported ${tickets.length} Change Requests!`, "success");
+                } catch (err) {
+                    console.error("Error parsing Excel file:", err);
+                    showNotification("Error parsing file: " + err.message, "error");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Export High-Level Summary Excel Spreadsheet with dynamic filename "VRS CAB - M/D/YYYY.xlsx"
+        function exportToExcel() {
+            if (tickets.length === 0) {
+                showNotification("No tickets available to export.", "info");
+                return;
+            }
+
+            const today = new Date();
+            const fileNameFormatted = `VRS CAB - ${today.getMonth() + 1}-${today.getDate()}-${today.getFullYear()}.xlsx`;
+
+            const summaryExportData = tickets.map(t => ({
+                "CR Number": t.id,
+                "Title": t.title,
+                "Category": t.category,
+                "Submitter": t.submitter,
+                "Impact Level": t.impact,
+                "Opened Date": t.openedDate || "N/A",
+                "Late Submission": t.flags && t.flags.includes("LATE_SUBMISSION") ? "YES" : "NO",
+                "Governance Status": t.isCancelled ? "CANCELLED" : (t.cabApproved ? "APPROVED IN CAB" : (t.rag === 'GREEN' ? "READY FOR CAB" : (t.rag === 'YELLOW' ? "MINOR MODIFICATION" : "REJECT / REVISE"))),
+                "Governance Score": t.isCancelled ? "N/A" : `${t.score}/100`,
+                "Schedule Window": `${t.startDate || 'N/A'} to ${t.endDate || 'N/A'}`,
+                "Calculated Duration": `${t.calculatedDurationDays} Days`,
+                "Revert Plan Present": t.backout && t.backout.length > 5 ? "YES" : "NO",
+                "Test Plan Present": t.test && t.test.length > 5 ? "YES" : "NO",
+                "CAB Approved": t.cabApproved ? "YES" : "NO",
+                "Attachments Verified": t.attachments,
+                "Review Notes": t.notes || ""
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(summaryExportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "VRS High-Level Summary");
+            XLSX.writeFile(wb, fileNameFormatted);
+            showNotification(`Exported High-Level Summary as '${fileNameFormatted}'`, "success");
+        }
+
+        function loadDemoSampleData() {
+            tickets = demoSampleTickets.map(assessCR);
+            document.getElementById('search-input').value = '';
+            document.getElementById('date-filter').value = '';
+            document.getElementById('risk-filter').value = 'all';
+            currentTab = 'all';
+            setTab('all');
+            updateDashboard();
+            showNotification("Loaded 4 sample demo tickets.", "success");
+        }
+    </script>
+</body>
+</html>
