@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CAB Review & Governance Dashboard</title>
-    <link rel="icon" type="image/png" href="favicon.png">
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,7 +17,7 @@
     <!-- Google Fonts: Inter & Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
 
     <script>
         tailwind.config = {
@@ -50,9 +49,10 @@
     </script>
     <style>
         body {
-            background-color: #ffffff;
+            background-color: #f8fafc;
             color: #0f172a;
             font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
         }
         ::-webkit-scrollbar {
             width: 8px;
@@ -75,34 +75,40 @@
             0%, 100% { opacity: 1; }
             50% { opacity: .6; }
         }
+        /* AI Panel transition */
+        #ai-chat-drawer {
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #ai-chat-drawer.closed {
+            transform: translateX(100%);
+        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col bg-white text-slate-900 antialiased selection:bg-teal-500 selection:text-white">
+<body class="min-h-screen flex flex-col bg-slate-50 text-slate-900 antialiased selection:bg-teal-500 selection:text-white">
 
-    <!-- Header Bar -->
-    <header class="sticky top-0 z-40 border-b border-teal-100 bg-white/95 backdrop-blur-md px-4 lg:px-8 py-3 shadow-sm">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <header class="sticky top-0 z-40 border-b border-teal-100 bg-white/95 backdrop-blur-md px-4 lg:px-10 py-3 shadow-sm w-full">
+        <div class="max-w-[1800px] mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             
             <!-- Logo & Title -->
             <div class="flex items-center space-x-3">
-                <div class="p-2.5 bg-gradient-to-br from-teal-600 to-teal-800 rounded-xl text-white shadow-md shadow-teal-600/20">
+                <div class="p-2.5 bg-gradient-to-br from-teal-600 to-teal-800 rounded-xl text-white shadow-md shadow-teal-600/20 shrink-0">
                     <i data-lucide="shield-check" class="w-6 h-6 stroke-[2.5]"></i>
                 </div>
                 <div>
                     <div class="flex items-center gap-2">
                         <h1 class="font-display text-xl font-bold tracking-tight text-slate-900">CAB Governance Reviewer</h1>
-                        <span class="px-2 py-0.5 text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200 rounded-full">v3.0 Executive</span>
+                        <span class="px-2 py-0.5 text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200 rounded-full">v3.5 Fullscreen Pro</span>
                     </div>
-                    <p class="text-xs text-slate-500">Co-Change Manager Assessment Portal & Analysis Engine</p>
+                    <p class="text-xs text-slate-500">Co-Change Manager Assessment Portal & ITIL 4 Intelligence Hub</p>
                 </div>
             </div>
 
             <!-- Schedule & Meeting Indicator -->
-            <div class="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-2 px-3 text-xs">
-                <div class="flex items-center gap-2 text-slate-700 border-r border-slate-200 pr-3">
+            <div class="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-2 px-3.5 text-xs">
+                <div class="flex items-center gap-2 text-slate-700 border-r border-slate-200 pr-4">
                     <i data-lucide="calendar-clock" class="w-4 h-4 text-teal-600"></i>
                     <div>
-                        <span class="font-medium text-slate-900 block">Next CAB Schedule</span>
+                        <span class="font-semibold text-slate-900 block">Next CAB Schedule</span>
                         <span class="text-slate-500 text-[11px]">Tue 10:00 AM EST | Thu 11:00 AM EST <strong class="text-teal-700">(Cutoff: 6:00 AM EST)</strong></span>
                     </div>
                 </div>
@@ -116,23 +122,25 @@
 
             <!-- Header Quick Actions -->
             <div class="flex items-center gap-2 flex-wrap">
+                <button onclick="toggleAIChatDrawer()" class="flex items-center gap-1.5 bg-gradient-to-r from-teal-600 to-teal-800 hover:from-teal-700 hover:to-teal-900 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-sm" title="Open ITIL 4 AI Advisor">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i> ITIL AI Assistant
+                </button>
                 <button onclick="openManualCRModal()" class="flex items-center gap-1.5 bg-teal-600 hover:bg-teal-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition shadow-sm" title="Manually paste or enter a late CR">
                     <i data-lucide="plus-circle" class="w-4 h-4"></i> Add Manual CR
                 </button>
                 <button onclick="exportToExcel()" class="flex items-center gap-1.5 bg-teal-800 hover:bg-teal-900 text-white px-3.5 py-2 rounded-xl text-xs font-semibold transition shadow-sm">
                     <i data-lucide="download" class="w-4 h-4"></i> Export High-Level Summary
                 </button>
-                <button onclick="promptClearData()" class="flex items-center gap-1 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 px-2.5 py-2 rounded-xl text-xs font-medium border border-slate-200 transition" title="Clear all tickets from queue">
+                <button onclick="promptClearData()" class="flex items-center gap-1 bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-600 px-2.5 py-2 rounded-xl text-xs font-medium border border-slate-200 transition shadow-2xs" title="Clear all tickets from queue">
                     <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-600"></i> Clear Data
                 </button>
-                <button onclick="loadDemoSampleData()" class="flex items-center gap-1 bg-slate-100 hover:bg-teal-50 text-slate-600 hover:text-teal-700 px-2.5 py-2 rounded-xl text-xs font-medium border border-slate-200 transition" title="Load sample demo tickets for testing">
+                <button onclick="loadDemoSampleData()" class="flex items-center gap-1 bg-white hover:bg-teal-50 text-slate-600 hover:text-teal-700 px-2.5 py-2 rounded-xl text-xs font-medium border border-slate-200 transition shadow-2xs" title="Load sample demo tickets for testing">
                     <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Load Sample
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- Toast Notification Banner -->
     <div id="toast-notification" class="fixed bottom-5 right-5 z-50 hidden transition-all duration-300 transform translate-y-2">
         <div id="toast-content" class="flex items-center gap-3 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl border border-slate-700 text-xs font-medium max-w-md">
             <i id="toast-icon" data-lucide="info" class="w-4 h-4 text-teal-400 shrink-0"></i>
@@ -161,7 +169,6 @@
         </div>
     </div>
 
-    <!-- Add Manual CR Modal -->
     <div id="manual-cr-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 my-auto max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-slate-200 pb-3">
@@ -270,201 +277,206 @@
         </div>
     </div>
 
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 space-y-6">
+    <main class="flex-1 max-w-[1800px] w-full mx-auto px-4 lg:px-10 py-6 space-y-6">
 
         <!-- Metrics Overview Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             
             <!-- Total CRs Card -->
-            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col justify-between relative overflow-hidden shadow-sm">
+            <div class="bg-white border border-slate-200 rounded-2xl p-4.5 flex flex-col justify-between relative overflow-hidden shadow-xs hover:border-teal-300 transition">
                 <span class="text-xs text-slate-500 font-medium">Total Tickets Listed</span>
                 <div class="flex items-baseline justify-between mt-2">
-                    <span id="stat-total" class="text-2xl font-bold font-display text-slate-900">0</span>
-                    <span class="text-xs text-slate-500">CAB Queue</span>
+                    <span id="stat-total" class="text-3xl font-bold font-display text-slate-900">0</span>
+                    <span class="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full font-mono">CAB Queue</span>
                 </div>
-                <div class="w-full bg-slate-200 rounded-full h-1 mt-3">
-                    <div id="bar-total" class="bg-teal-600 h-1 rounded-full" style="width: 0%"></div>
+                <div class="w-full bg-slate-100 rounded-full h-1.5 mt-3">
+                    <div id="bar-total" class="bg-teal-600 h-1.5 rounded-full" style="width: 0%"></div>
                 </div>
             </div>
 
             <!-- Green Ready Card -->
-            <div class="bg-emerald-50/50 border border-emerald-200 rounded-xl p-4 flex flex-col justify-between relative shadow-sm">
-                <span class="text-xs text-emerald-700 font-medium flex items-center gap-1.5">
-                    <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Ready for CAB (Green)
+            <div class="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-4.5 flex flex-col justify-between relative shadow-xs hover:border-emerald-400 transition">
+                <span class="text-xs text-emerald-800 font-semibold flex items-center gap-1.5">
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i> Ready for CAB (Green)
                 </span>
                 <div class="flex items-baseline justify-between mt-2">
-                    <span id="stat-green" class="text-2xl font-bold font-display text-emerald-700">0</span>
-                    <span class="text-xs text-emerald-600">Approved Ready</span>
+                    <span id="stat-green" class="text-3xl font-bold font-display text-emerald-700">0</span>
+                    <span class="text-xs text-emerald-700 font-medium bg-emerald-100 px-2 py-0.5 rounded-full">Approved Ready</span>
                 </div>
-                <div class="w-full bg-emerald-200/60 rounded-full h-1 mt-3">
-                    <div id="bar-green" class="bg-emerald-600 h-1 rounded-full" style="width: 0%"></div>
+                <div class="w-full bg-emerald-200/60 rounded-full h-1.5 mt-3">
+                    <div id="bar-green" class="bg-emerald-600 h-1.5 rounded-full" style="width: 0%"></div>
                 </div>
             </div>
 
             <!-- Yellow Minor Modifications Card -->
-            <div class="bg-amber-50/50 border border-amber-200 rounded-xl p-4 flex flex-col justify-between shadow-sm">
-                <span class="text-xs text-amber-700 font-medium flex items-center gap-1.5">
-                    <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> Minor Modifications (Yellow)
+            <div class="bg-amber-50/60 border border-amber-200 rounded-2xl p-4.5 flex flex-col justify-between shadow-xs hover:border-amber-400 transition">
+                <span class="text-xs text-amber-800 font-semibold flex items-center gap-1.5">
+                    <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600"></i> Minor Modifications (Yellow)
                 </span>
                 <div class="flex items-baseline justify-between mt-2">
-                    <span id="stat-yellow" class="text-2xl font-bold font-display text-amber-700">0</span>
-                    <span class="text-xs text-amber-600">Requires Touch-up</span>
+                    <span id="stat-yellow" class="text-3xl font-bold font-display text-amber-800">0</span>
+                    <span class="text-xs text-amber-700 font-medium bg-amber-100 px-2 py-0.5 rounded-full">Requires Touch-up</span>
                 </div>
-                <div class="w-full bg-amber-200/60 rounded-full h-1 mt-3">
-                    <div id="bar-yellow" class="bg-amber-500 h-1 rounded-full" style="width: 0%"></div>
+                <div class="w-full bg-amber-200/60 rounded-full h-1.5 mt-3">
+                    <div id="bar-yellow" class="bg-amber-500 h-1.5 rounded-full" style="width: 0%"></div>
                 </div>
             </div>
 
             <!-- Red Major Modifications Card -->
-            <div class="bg-rose-50/50 border border-rose-200 rounded-xl p-4 flex flex-col justify-between shadow-sm">
-                <span class="text-xs text-rose-700 font-medium flex items-center gap-1.5">
-                    <i data-lucide="x-circle" class="w-3.5 h-3.5"></i> Reject / Fix (Red)
+            <div class="bg-rose-50/60 border border-rose-200 rounded-2xl p-4.5 flex flex-col justify-between shadow-xs hover:border-rose-400 transition">
+                <span class="text-xs text-rose-800 font-semibold flex items-center gap-1.5">
+                    <i data-lucide="x-circle" class="w-4 h-4 text-rose-600"></i> Reject / Fix (Red)
                 </span>
                 <div class="flex items-baseline justify-between mt-2">
-                    <span id="stat-red" class="text-2xl font-bold font-display text-rose-700">0</span>
-                    <span class="text-xs text-rose-600">Critical Defect</span>
+                    <span id="stat-red" class="text-3xl font-bold font-display text-rose-700">0</span>
+                    <span class="text-xs text-rose-700 font-medium bg-rose-100 px-2 py-0.5 rounded-full">Critical Defect</span>
                 </div>
-                <div class="w-full bg-rose-200/60 rounded-full h-1 mt-3">
-                    <div id="bar-red" class="bg-rose-600 h-1 rounded-full" style="width: 0%"></div>
+                <div class="w-full bg-rose-200/60 rounded-full h-1.5 mt-3">
+                    <div id="bar-red" class="bg-rose-600 h-1.5 rounded-full" style="width: 0%"></div>
                 </div>
             </div>
 
             <!-- CAB Meeting Approved Card -->
-            <div class="bg-teal-50/60 border border-teal-200 rounded-xl p-4 flex flex-col justify-between shadow-sm">
-                <span class="text-xs text-teal-800 font-medium flex items-center gap-1.5">
-                    <i data-lucide="award" class="w-3.5 h-3.5 text-teal-600"></i> CAB Approved Archive
+            <div class="bg-teal-50/70 border border-teal-200 rounded-2xl p-4.5 flex flex-col justify-between shadow-xs hover:border-teal-400 transition">
+                <span class="text-xs text-teal-900 font-semibold flex items-center gap-1.5">
+                    <i data-lucide="award" class="w-4 h-4 text-teal-600"></i> CAB Approved Archive
                 </span>
                 <div class="flex items-baseline justify-between mt-2">
-                    <span id="stat-approved" class="text-2xl font-bold font-display text-teal-800">0</span>
-                    <span class="text-xs text-teal-600">Signed Off</span>
+                    <span id="stat-approved" class="text-3xl font-bold font-display text-teal-800">0</span>
+                    <span class="text-xs text-teal-700 font-medium bg-teal-100 px-2 py-0.5 rounded-full">Signed Off</span>
                 </div>
-                <div class="w-full bg-teal-200 rounded-full h-1 mt-3">
-                    <div id="bar-approved" class="bg-teal-600 h-1 rounded-full" style="width: 0%"></div>
+                <div class="w-full bg-teal-200 rounded-full h-1.5 mt-3">
+                    <div id="bar-approved" class="bg-teal-600 h-1.5 rounded-full" style="width: 0%"></div>
                 </div>
             </div>
         </div>
 
         <!-- Real-Time Anomaly & Governance Trends Widget -->
-        <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-teal-950 text-white rounded-2xl p-4 shadow-md border border-slate-700">
-            <div class="flex items-center justify-between mb-3 border-b border-slate-700/80 pb-2">
+        <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-teal-950 text-white rounded-2xl p-5 shadow-md border border-slate-800">
+            <div class="flex items-center justify-between mb-3 border-b border-slate-700/80 pb-2.5">
                 <div class="flex items-center gap-2">
                     <i data-lucide="trending-up" class="w-4 h-4 text-teal-400"></i>
                     <h3 class="text-xs font-bold uppercase tracking-wider text-teal-300">Real-Time Governance Trends & Anomaly Radar</h3>
                 </div>
-                <span class="text-[10px] bg-teal-900/80 text-teal-300 border border-teal-700/60 px-2 py-0.5 rounded-full font-mono">Live Batch Analysis</span>
+                <div class="flex items-center gap-2">
+                    <button onclick="askAIToAnalyzeQueue()" class="text-[11px] bg-teal-800 hover:bg-teal-700 text-teal-100 border border-teal-600/80 px-2.5 py-1 rounded-lg font-medium transition flex items-center gap-1">
+                        <i data-lucide="sparkles" class="w-3 h-3 text-amber-300"></i> Ask AI to Analyze Batch
+                    </button>
+                    <span class="text-[10px] bg-teal-900/80 text-teal-300 border border-teal-700/60 px-2 py-0.5 rounded-full font-mono hidden sm:inline-block">Live Batch Analysis</span>
+                </div>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
-                <div class="bg-slate-800/70 border border-slate-700 p-2.5 rounded-xl">
+                <div class="bg-slate-800/70 border border-slate-700/80 p-3 rounded-xl">
                     <span class="text-[10px] text-slate-400 block font-medium">Late Submissions</span>
-                    <span id="trend-late-count" class="text-lg font-bold text-rose-400 font-display">0</span>
+                    <span id="trend-late-count" class="text-xl font-bold text-rose-400 font-display">0</span>
                     <span id="trend-late-pct" class="text-[10px] text-slate-400 block mt-0.5">(0% of total)</span>
                 </div>
-                <div class="bg-slate-800/70 border border-slate-700 p-2.5 rounded-xl">
+                <div class="bg-slate-800/70 border border-slate-700/80 p-3 rounded-xl">
                     <span class="text-[10px] text-slate-400 block font-medium">Risk vs Impact Mismatches</span>
-                    <span id="trend-risk-mismatch" class="text-lg font-bold text-amber-400 font-display">0</span>
+                    <span id="trend-risk-mismatch" class="text-xl font-bold text-amber-400 font-display">0</span>
                     <span class="text-[10px] text-slate-400 block mt-0.5">Rating Discrepancies</span>
                 </div>
-                <div class="bg-slate-800/70 border border-slate-700 p-2.5 rounded-xl">
+                <div class="bg-slate-800/70 border border-slate-700/80 p-3 rounded-xl">
                     <span class="text-[10px] text-slate-400 block font-medium">Schedule Duration Flags</span>
-                    <span id="trend-duration-flags" class="text-lg font-bold text-teal-300 font-display">0</span>
+                    <span id="trend-duration-flags" class="text-xl font-bold text-teal-300 font-display">0</span>
                     <span class="text-[10px] text-slate-400 block mt-0.5">Extended Windows</span>
                 </div>
-                <div class="bg-slate-800/70 border border-slate-700 p-2.5 rounded-xl">
+                <div class="bg-slate-800/70 border border-slate-700/80 p-3 rounded-xl">
                     <span class="text-[10px] text-slate-400 block font-medium">Missing Backout / Test</span>
-                    <span id="trend-missing-plans" class="text-lg font-bold text-rose-300 font-display">0</span>
+                    <span id="trend-missing-plans" class="text-xl font-bold text-rose-300 font-display">0</span>
                     <span class="text-[10px] text-slate-400 block mt-0.5">Incomplete Governance</span>
                 </div>
             </div>
-            <p id="trend-summary-text" class="text-[11px] text-slate-300 mt-2.5 pt-2 border-t border-slate-700/60 italic text-center">
+            <p id="trend-summary-text" class="text-xs text-slate-300 mt-3 pt-2.5 border-t border-slate-700/60 italic text-center">
                 Upload a change request spreadsheet or add manual CRs to generate trend telemetry.
             </p>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
             <!-- Dropzone -->
-            <div class="lg:col-span-2 bg-slate-50 border-2 border-dashed border-teal-300 hover:border-teal-500 transition-colors rounded-2xl p-5 text-center relative flex flex-col justify-center items-center group cursor-pointer shadow-sm" id="drop-zone">
+            <div class="lg:col-span-2 bg-white border-2 border-dashed border-teal-300 hover:border-teal-500 transition-colors rounded-2xl p-6 text-center relative flex flex-col justify-center items-center group cursor-pointer shadow-xs" id="drop-zone">
                 <input type="file" id="xlsx-upload" accept=".xlsx, .xls, .csv" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onchange="handleFileUpload(event)">
-                <div class="p-3 bg-teal-100/70 group-hover:bg-teal-200/80 text-teal-700 rounded-full mb-2 transition">
-                    <i data-lucide="file-up" class="w-6 h-6"></i>
+                <div class="p-3 bg-teal-100/80 group-hover:bg-teal-200/90 text-teal-700 rounded-full mb-2 transition">
+                    <i data-lucide="file-up" class="w-7 h-7"></i>
                 </div>
-                <h3 class="text-sm font-semibold text-slate-900">Upload Change Requests Spreadsheet (.xlsx)</h3>
-                <p class="text-xs text-slate-500 mt-1 max-w-md">Drag & drop your ServiceNow / ITSM Excel file here. The smart engine automatically recognizes headers, maps CR numbers, and assesses governance rules.</p>
-                <div class="flex items-center gap-2 mt-3 text-[11px] text-teal-700 font-mono bg-teal-50 px-3 py-1 rounded-full border border-teal-200">
+                <h3 class="text-sm font-bold text-slate-900">Upload Change Requests Spreadsheet (.xlsx, .csv)</h3>
+                <p class="text-xs text-slate-500 mt-1 max-w-lg">Drag & drop your ServiceNow or ITSM Excel export file here. The smart engine automatically maps headers, calculates SLA cutoffs, and assesses governance rules.</p>
+                <div class="flex items-center gap-2 mt-3 text-[11px] text-teal-800 font-mono bg-teal-50 px-3.5 py-1 rounded-full border border-teal-200">
                     <span>Supports: Number, Short description, Justification, Implementation, Risk, Backout, Test, Dates</span>
                 </div>
             </div>
 
             <!-- Co-Change Manager Checklist -->
-            <div class="bg-gradient-to-br from-slate-50 via-teal-50/30 to-white border border-teal-200 rounded-2xl p-5 flex flex-col justify-between shadow-sm">
+            <div class="bg-gradient-to-br from-slate-50 via-teal-50/40 to-white border border-teal-200 rounded-2xl p-5 flex flex-col justify-between shadow-xs">
                 <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-xs font-bold text-teal-800 uppercase tracking-wider flex items-center gap-1.5">
-                            <i data-lucide="compass" class="w-4 h-4 text-teal-600"></i> Co-Change Manager Governance Rules
+                    <div class="flex items-center justify-between mb-2 border-b border-teal-100 pb-2">
+                        <span class="text-xs font-bold text-teal-900 uppercase tracking-wider flex items-center gap-1.5">
+                            <i data-lucide="compass" class="w-4 h-4 text-teal-600"></i> Co-Change Manager Rules
                         </span>
-                        <span class="text-[10px] bg-teal-100 text-teal-800 px-2 py-0.5 rounded-full font-medium">Non-Technical Checks</span>
+                        <span class="text-[10px] bg-teal-100 text-teal-800 px-2 py-0.5 rounded-full font-semibold">ITIL 4 Practice</span>
                     </div>
-                    <ul class="text-xs text-slate-600 space-y-1.5 mt-2">
-                        <li class="flex items-start gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5"></i> <span><strong>Cutoff Deadline:</strong> Submission ("Opened") must be prior to 6:00 AM EST on CAB day.</span></li>
-                        <li class="flex items-start gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5"></i> <span><strong>Justification:</strong> Clear & makes operational sense.</span></li>
-                        <li class="flex items-start gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5"></i> <span><strong>Implementation:</strong> Step-by-step complete execution plan.</span></li>
-                        <li class="flex items-start gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5"></i> <span><strong>Risk vs Impact:</strong> Impact matches Low/Med/High rating.</span></li>
-                        <li class="flex items-start gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5"></i> <span><strong>Backout Plan:</strong> Clear revert steps (Mandatory).</span></li>
-                        <li class="flex items-start gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5"></i> <span><strong>Schedules & Duration:</strong> Flags long windows (7-day patching exempted).</span></li>
+                    <ul class="text-xs text-slate-700 space-y-1.5 mt-2">
+                        <li class="flex items-start gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5"></i> <span><strong>Cutoff SLA:</strong> Submission ("Opened") must be prior to 6:00 AM EST on CAB day.</span></li>
+                        <li class="flex items-start gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5"></i> <span><strong>Justification:</strong> Clear business value & operational rationale.</span></li>
+                        <li class="flex items-start gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5"></i> <span><strong>Implementation:</strong> Sequential step-by-step execution steps.</span></li>
+                        <li class="flex items-start gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5"></i> <span><strong>Risk vs Impact:</strong> Impact matches Low/Med/High rating text.</span></li>
+                        <li class="flex items-start gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5"></i> <span><strong>Backout Plan:</strong> Explicit rollback commands & backout triggers.</span></li>
+                        <li class="flex items-start gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5"></i> <span><strong>Schedule Window:</strong> Flags multi-day windows (Patching exempted).</span></li>
                     </ul>
                 </div>
             </div>
         </div>
 
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-200 pb-4">
             
             <!-- Category Tabs -->
-            <div class="flex items-center gap-1 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
-                <button onclick="setTab('all')" id="tab-all" class="tab-btn active px-4 py-2 rounded-xl text-xs font-medium transition flex items-center gap-2 bg-teal-600 text-white font-semibold shadow-sm">
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-2 lg:pb-0 scrollbar-none">
+                <button onclick="setTab('all')" id="tab-all" class="tab-btn active px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 bg-teal-600 text-white shadow-sm">
                     <span>All Tickets</span>
                     <span id="tab-count-all" class="px-1.5 py-0.5 text-[10px] rounded-full bg-white/20 text-white">0</span>
                 </button>
-                <button onclick="setTab('green')" id="tab-green" class="tab-btn px-4 py-2 rounded-xl text-xs font-medium transition flex items-center gap-2 bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-emerald-500/50">
+                <button onclick="setTab('green')" id="tab-green" class="tab-btn px-4 py-2 rounded-xl text-xs font-medium transition flex items-center gap-2 bg-white text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-emerald-500">
                     <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                     <span>Ready for CAB</span>
                     <span id="tab-count-green" class="px-1.5 py-0.5 text-[10px] rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">0</span>
                 </button>
-                <button onclick="setTab('yellow')" id="tab-yellow" class="tab-btn px-4 py-2 rounded-xl text-xs font-medium transition flex items-center gap-2 bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-amber-500/50">
+                <button onclick="setTab('yellow')" id="tab-yellow" class="tab-btn px-4 py-2 rounded-xl text-xs font-medium transition flex items-center gap-2 bg-white text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-amber-500">
                     <span class="w-2 h-2 rounded-full bg-amber-500"></span>
                     <span>Minor Modification</span>
                     <span id="tab-count-yellow" class="px-1.5 py-0.5 text-[10px] rounded-full bg-amber-100 text-amber-800 border border-amber-200">0</span>
                 </button>
-                <button onclick="setTab('red')" id="tab-red" class="tab-btn px-4 py-2 rounded-xl text-xs font-medium transition flex items-center gap-2 bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-rose-500/50">
+                <button onclick="setTab('red')" id="tab-red" class="tab-btn px-4 py-2 rounded-xl text-xs font-medium transition flex items-center gap-2 bg-white text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-rose-500">
                     <span class="w-2 h-2 rounded-full bg-rose-500"></span>
                     <span>Major Modification / Reject</span>
                     <span id="tab-count-red" class="px-1.5 py-0.5 text-[10px] rounded-full bg-rose-100 text-rose-800 border border-rose-200">0</span>
                 </button>
-                <button onclick="setTab('approved')" id="tab-approved" class="tab-btn px-4 py-2 rounded-xl text-xs font-medium transition flex items-center gap-2 bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-teal-500/50">
+                <button onclick="setTab('approved')" id="tab-approved" class="tab-btn px-4 py-2 rounded-xl text-xs font-medium transition flex items-center gap-2 bg-white text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-teal-500">
                     <i data-lucide="archive" class="w-3.5 h-3.5 text-teal-600"></i>
-                    <span>Approved CRs from Last CAB</span>
+                    <span>Approved CRs Archive</span>
                     <span id="tab-count-approved" class="px-1.5 py-0.5 text-[10px] rounded-full bg-teal-100 text-teal-800 border border-teal-200">0</span>
                 </button>
             </div>
 
             <!-- Search & Filters -->
-            <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
                 <!-- Search Input -->
-                <div class="relative flex-1 md:w-56">
+                <div class="relative flex-1 md:w-64">
                     <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
-                    <input type="text" id="search-input" placeholder="Search CR #, title, owner..." oninput="renderCRList()" class="w-full bg-white border border-slate-300 focus:border-teal-600 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none transition shadow-sm">
+                    <input type="text" id="search-input" placeholder="Search CR #, title, owner..." oninput="renderCRList()" class="w-full bg-white border border-slate-300 focus:border-teal-600 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none transition shadow-2xs">
                 </div>
 
                 <!-- Date Filter Input & Clear Date Button -->
                 <div class="relative flex items-center gap-1">
                     <i data-lucide="calendar" class="w-4 h-4 text-slate-400 absolute left-2.5 top-2 pointer-events-none"></i>
-                    <input type="date" id="date-filter" onchange="renderCRList()" class="bg-white border border-slate-300 text-slate-800 text-xs rounded-xl pl-8 pr-2 py-1.5 focus:border-teal-600 focus:outline-none shadow-sm cursor-pointer" title="Filter by Planned Schedule Date">
-                    <button onclick="clearDateFilter()" id="clear-date-btn" class="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-xl text-xs font-medium border border-slate-300 transition shadow-sm" title="Clear Date Filter">
+                    <input type="date" id="date-filter" onchange="renderCRList()" class="bg-white border border-slate-300 text-slate-800 text-xs rounded-xl pl-8 pr-2 py-1.5 focus:border-teal-600 focus:outline-none shadow-2xs cursor-pointer" title="Filter by Planned Schedule Date">
+                    <button onclick="clearDateFilter()" id="clear-date-btn" class="flex items-center gap-1 bg-white hover:bg-slate-100 text-slate-700 px-2.5 py-1.5 rounded-xl text-xs font-medium border border-slate-300 transition shadow-2xs" title="Clear Date Filter">
                         <i data-lucide="calendar-x" class="w-3.5 h-3.5 text-rose-600"></i>
                         <span>Clear Date</span>
                     </button>
                 </div>
 
                 <!-- Risk/Impact Dropdown -->
-                <select id="risk-filter" onchange="renderCRList()" class="bg-white border border-slate-300 text-slate-800 text-xs rounded-xl px-3 py-1.5 focus:border-teal-600 focus:outline-none shadow-sm">
+                <select id="risk-filter" onchange="renderCRList()" class="bg-white border border-slate-300 text-slate-800 text-xs rounded-xl px-3 py-1.5 focus:border-teal-600 focus:outline-none shadow-2xs">
                     <option value="all">All Impact Levels</option>
                     <option value="High">High Impact</option>
                     <option value="Medium">Medium Impact</option>
@@ -473,14 +485,12 @@
             </div>
         </div>
 
-        <!-- Ticket Cards List -->
         <div id="cr-list-container" class="space-y-4">
             <!-- Dynamic Content Injected Here via JavaScript -->
         </div>
 
     </main>
 
-    <!-- CR Detailed Review Modal -->
     <div id="cr-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-white border border-slate-200 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto">
             <!-- Modal Header -->
@@ -626,14 +636,89 @@
         </div>
     </div>
 
-    <!-- JavaScript Application Logic -->
+    <!-- Floating Trigger Button -->
+    <button onclick="toggleAIChatDrawer()" id="ai-chat-trigger" class="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-teal-700 via-teal-800 to-slate-900 text-white p-3.5 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 flex items-center gap-2 group border border-teal-500/50">
+        <div class="relative">
+            <i data-lucide="bot" class="w-6 h-6 text-teal-300"></i>
+            <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-slate-900 badge-pulse"></span>
+        </div>
+        <span class="font-display font-bold text-xs pr-1">ITIL AI Assistant</span>
+    </button>
+
+    <!-- Slide-over Drawer / Panel -->
+    <div id="ai-chat-drawer" class="closed fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white border-l border-slate-200 shadow-2xl flex flex-col">
+        <!-- Panel Header -->
+        <div class="bg-gradient-to-r from-slate-900 via-teal-950 to-slate-900 text-white p-4 border-b border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <div class="p-2 bg-teal-800/80 rounded-xl border border-teal-600/50 text-amber-300">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="font-display font-bold text-sm tracking-tight flex items-center gap-1.5">
+                        ITIL 4 Change Enablement AI
+                    </h3>
+                    <p class="text-[11px] text-teal-200/80">Expert Practice Knowledge & Queue Analytics</p>
+                </div>
+            </div>
+            <button onclick="toggleAIChatDrawer()" class="p-1 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white transition">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <!-- Quick Knowledge Topic Chips -->
+        <div class="p-3 bg-slate-50 border-b border-slate-200 space-y-1.5">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Suggested Topics & Actions:</span>
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-[11px]">
+                <button onclick="sendPredefinedAIQuery('Analyze loaded queue')" class="bg-teal-100 hover:bg-teal-200 text-teal-900 px-2.5 py-1 rounded-lg font-medium whitespace-nowrap transition shrink-0 border border-teal-300">
+                    📊 Analyze Active Queue
+                </button>
+                <button onclick="sendPredefinedAIQuery('What are Standard vs Normal vs Emergency changes?')" class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-2.5 py-1 rounded-lg font-medium whitespace-nowrap transition shrink-0">
+                    📚 Standard vs Normal vs Emergency
+                </button>
+                <button onclick="sendPredefinedAIQuery('Explain CAB responsibilities and authority in ITIL 4')" class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-2.5 py-1 rounded-lg font-medium whitespace-nowrap transition shrink-0">
+                    🛡️ CAB Role & Authority
+                </button>
+                <button onclick="sendPredefinedAIQuery('How to evaluate risk vs impact in change requests?')" class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-2.5 py-1 rounded-lg font-medium whitespace-nowrap transition shrink-0">
+                    ⚡ Risk vs Impact Assessment
+                </button>
+                <button onclick="sendPredefinedAIQuery('What are mandatory items for a complete Backout Plan?')" class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-2.5 py-1 rounded-lg font-medium whitespace-nowrap transition shrink-0">
+                    ↩️ Backout Plan Criteria
+                </button>
+            </div>
+        </div>
+
+        <!-- Chat History Window -->
+        <div id="ai-chat-history" class="flex-1 p-4 overflow-y-auto space-y-3.5 text-xs">
+            <!-- Welcome AI Message -->
+            <div class="flex items-start gap-2.5">
+                <div class="p-1.5 bg-teal-700 text-white rounded-lg shrink-0 mt-0.5">
+                    <i data-lucide="bot" class="w-4 h-4"></i>
+                </div>
+                <div class="bg-slate-100 border border-slate-200 p-3 rounded-2xl rounded-tl-none text-slate-800 space-y-2 max-w-[85%] leading-relaxed">
+                    <p class="font-semibold text-teal-900">Hello! I am your ITIL 4 Change Enablement Advisor.</p>
+                    <p>I can assist with ITIL governance rules, standard change models, emergency CAB protocols, or analyze the tickets currently loaded in your review dashboard.</p>
+                    <p class="text-[11px] text-slate-500 italic">Click any suggested chip above or type your question below!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Input Form -->
+        <div class="p-3 border-t border-slate-200 bg-white">
+            <form id="ai-chat-form" onsubmit="handleAIChatSubmit(event)" class="flex items-center gap-2">
+                <input type="text" id="ai-chat-input" placeholder="Ask about ITIL 4, CAB rules, or queue risks..." class="flex-1 bg-slate-100 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-teal-600 focus:bg-white transition">
+                <button type="submit" id="ai-send-btn" class="bg-teal-700 hover:bg-teal-800 text-white p-2 rounded-xl transition shadow-sm shrink-0">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
     <script>
-        // Start with sample demo data loaded
         let tickets = [];
         let currentTab = 'all';
         let currentModalTicketId = null;
 
-        // Sample demo tickets provided for optional testing
+        // Sample demo tickets provided for testing
         const demoSampleTickets = [
             {
                 id: "CHG0038910",
@@ -717,7 +802,6 @@
             }
         ];
 
-        // Custom Notification System (Replaces alert)
         function showNotification(msg, type = 'info') {
             const toast = document.getElementById('toast-notification');
             const messageEl = document.getElementById('toast-message');
@@ -740,7 +824,6 @@
             }, 4000);
         }
 
-        // Custom Confirmation Dialog
         function promptClearData() {
             if (tickets.length === 0) {
                 showNotification("Queue is already empty.", "info");
@@ -765,7 +848,6 @@
             showNotification("All ticket data has been cleared.", "success");
         }
 
-        // Manual CR Modal Functions
         function openManualCRModal() {
             document.getElementById('manual-cr-modal').classList.remove('hidden');
         }
@@ -827,7 +909,7 @@
             const checks = [];
             const flags = [];
 
-            // 0. Submission Date / Cutoff Check (Cutoff: 6:00 AM EST on CAB days - Tuesday & Thursday)
+            // 0. Submission Date / Cutoff Check (Cutoff: 6:00 AM EST on CAB days)
             const openedStr = (t.openedDate || t.opened || '').trim();
             let isLate = t.forceLate || false;
             let cutoffMsg = "";
@@ -846,19 +928,19 @@
                         targetCabDate = new Date(openedDt);
                     }
 
-                    const day = targetCabDate.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+                    const day = targetCabDate.getDay();
                     const cutoffDt = new Date(targetCabDate);
                     
-                    if (day === 2 || day === 4) { // Tue or Thu
+                    if (day === 2 || day === 4) {
                         cutoffDt.setHours(6, 0, 0, 0);
-                    } else if (day === 3) { // Wed -> Target was Tue 6 AM
+                    } else if (day === 3) {
                         cutoffDt.setDate(cutoffDt.getDate() - 1);
                         cutoffDt.setHours(6, 0, 0, 0);
-                    } else if (day === 0 || day === 1) { // Sun/Mon -> Target is Tue 6 AM
+                    } else if (day === 0 || day === 1) {
                         const daysUntilTue = (2 - day + 7) % 7;
                         cutoffDt.setDate(cutoffDt.getDate() + daysUntilTue);
                         cutoffDt.setHours(6, 0, 0, 0);
-                    } else { // Fri/Sat -> Target was Thu 6 AM
+                    } else {
                         const daysBackToThu = (day === 5) ? 1 : 2;
                         cutoffDt.setDate(cutoffDt.getDate() - daysBackToThu);
                         cutoffDt.setHours(6, 0, 0, 0);
@@ -954,18 +1036,7 @@
                 flags.push("MISSING_PLAN");
             }
 
-            // 6. Typo & Grammar Check
-            const fullText = `${t.title} ${t.justification} ${t.implementation} ${t.risk} ${t.backout} ${t.test}`;
-            const typoMatches = fullText.match(/\b(teh|recieve|seperate|impac|justificaton|shetdule|tbd|pls|thx)\b/gi);
-            if (typoMatches && typoMatches.length > 0) {
-                const uniqueTypos = [...new Set(typoMatches.map(m => m.toLowerCase()))];
-                score -= 5;
-                checks.push({ pass: false, msg: `Potential spelling/grammar issues detected: [${uniqueTypos.join(', ')}].` });
-            } else {
-                checks.push({ pass: true, msg: "Spelling and formatting appear clean." });
-            }
-
-            // 7. Schedule Duration Anomaly Check & Patching Exemption
+            // 6. Schedule Duration Anomaly Check & Patching Exemption
             let durationDays = 0;
             if (t.startDate && t.endDate) {
                 const start = new Date(t.startDate);
@@ -1038,7 +1109,6 @@
             return t;
         }
 
-        // Initialize state on load
         window.onload = function() {
             loadDemoSampleData();
         };
@@ -1132,7 +1202,7 @@
         function setTab(tab) {
             currentTab = tab;
             document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.className = "tab-btn px-4 py-2 rounded-xl text-xs font-medium transition flex items-center gap-2 bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-teal-500/50";
+                btn.className = "tab-btn px-4 py-2 rounded-xl text-xs font-medium transition flex items-center gap-2 bg-white text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-teal-500";
             });
 
             const activeBtn = document.getElementById(`tab-${tab}`);
@@ -1149,22 +1219,18 @@
             const dateVal = document.getElementById('date-filter').value;
 
             let filtered = tickets.filter(t => {
-                // Tab filter
                 if (currentTab === 'green' && (t.isCancelled || (!t.isReviewed && t.rag !== 'GREEN') || t.cabApproved)) return false;
                 if (currentTab === 'yellow' && (t.isCancelled || t.isReviewed || t.rag !== 'YELLOW' || t.cabApproved)) return false;
                 if (currentTab === 'red' && (t.isCancelled || t.isReviewed || t.rag !== 'RED' || t.cabApproved)) return false;
                 if (currentTab === 'approved' && (t.isCancelled || !t.cabApproved)) return false;
 
-                // Search filter
                 if (searchVal) {
                     const matchStr = `${t.id} ${t.title} ${t.submitter} ${t.category} ${t.justification}`.toLowerCase();
                     if (!matchStr.includes(searchVal)) return false;
                 }
 
-                // Risk Filter
                 if (riskVal !== 'all' && (t.impact || '').toLowerCase() !== riskVal.toLowerCase()) return false;
 
-                // Date Filter
                 if (dateVal) {
                     const crStart = (t.startDate || '').substring(0, 10);
                     const crEnd = (t.endDate || '').substring(0, 10);
@@ -1176,7 +1242,7 @@
 
             if (filtered.length === 0) {
                 container.innerHTML = `
-                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-12 text-center my-6 shadow-sm">
+                    <div class="bg-white border border-slate-200 rounded-2xl p-12 text-center my-6 shadow-xs">
                         <i data-lucide="inbox" class="w-10 h-10 text-slate-400 mx-auto mb-3"></i>
                         <h3 class="text-sm font-semibold text-slate-800">${tickets.length === 0 ? 'No CAB Tickets Loaded' : 'No Change Requests Found'}</h3>
                         <p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">${tickets.length === 0 ? 'Upload your ServiceNow or ITSM Excel spreadsheet (.xlsx) above or add manual CRs to run governance checks and review tickets.' : 'Try adjusting your search criteria, category tab, or date filter.'}</p>
@@ -1222,18 +1288,18 @@
                 const isLateSubmission = t.flags && t.flags.includes("LATE_SUBMISSION");
 
                 return `
-                    <div class="bg-white border ${t.isCancelled ? 'border-slate-300 bg-slate-50/50 opacity-80' : 'border-slate-200 hover:border-teal-500'} rounded-2xl p-5 transition-all shadow-sm group relative">
-                        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div class="bg-white border ${t.isCancelled ? 'border-slate-300 bg-slate-50/50 opacity-80' : 'border-slate-200 hover:border-teal-500'} rounded-2xl p-5 transition-all shadow-2xs hover:shadow-md group relative">
+                        <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
                             
                             <!-- Left Details Section -->
                             <div class="flex items-start gap-4 flex-1">
-                                <div class="flex flex-col items-center justify-center shrink-0 p-2 bg-slate-50 rounded-xl border border-slate-200 min-w-[60px]">
+                                <div class="flex flex-col items-center justify-center shrink-0 p-2.5 bg-slate-50 rounded-xl border border-slate-200 min-w-[65px]">
                                     <span class="w-3 h-3 rounded-full bg-${ragColor}-500 mb-1"></span>
-                                    <span class="text-[10px] font-mono font-bold text-slate-500">Score</span>
-                                    <span class="text-sm font-bold text-${ragColor}-700 font-display">${t.isCancelled ? '—' : t.score}</span>
+                                    <span class="text-[10px] font-mono font-bold text-slate-500 uppercase">Score</span>
+                                    <span class="text-base font-bold text-${ragColor}-700 font-display">${t.isCancelled ? '—' : t.score}</span>
                                 </div>
 
-                                <div class="space-y-1 flex-1">
+                                <div class="space-y-1.5 flex-1">
                                     <div class="flex items-center gap-2 flex-wrap">
                                         <!-- Highlighted Ticket CR Number -->
                                         <span class="text-xs font-mono font-bold text-teal-800 bg-teal-50 border border-teal-300 px-2.5 py-0.5 rounded-lg shadow-2xs">${t.id}</span>
@@ -1261,33 +1327,33 @@
 
                                     <h3 class="text-base font-bold font-display ${t.isCancelled ? 'text-slate-500 line-through' : 'text-slate-900 group-hover:text-teal-700'} transition-colors">${t.title}</h3>
 
-                                    <div class="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-500 pt-1">
+                                    <div class="flex flex-wrap items-center gap-y-1 gap-x-5 text-xs text-slate-500 pt-1">
                                         <span class="flex items-center gap-1"><i data-lucide="user" class="w-3.5 h-3.5 text-slate-400"></i> ${t.submitter}</span>
-                                        <span class="flex items-center gap-1"><i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i> Opened: <strong class="text-slate-700">${t.openedDate || 'N/A'}</strong></span>
+                                        <span class="flex items-center gap-1"><i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i> Opened: <strong class="text-slate-700 font-mono">${t.openedDate || 'N/A'}</strong></span>
                                         <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i> Schedule: ${t.startDate || 'Unscheduled'} - ${t.endDate || 'Unscheduled'}</span>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Right Quick Actions & Attachments Toggle -->
-                            <div class="flex flex-col sm:flex-row lg:flex-col items-end justify-between gap-3 border-t lg:border-t-0 border-slate-100 pt-3 lg:pt-0 shrink-0">
+                            <div class="flex flex-col sm:flex-row xl:flex-col items-end justify-between gap-3 border-t xl:border-t-0 border-slate-100 pt-3 xl:pt-0 shrink-0">
                                 
                                 <!-- Attachments Button Group (YES / NO / NA) -->
                                 <div class="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-200">
                                     <span class="text-[10px] uppercase font-bold text-slate-500 px-2">Attach:</span>
-                                    <button onclick="setAttachment('${t.id}', 'YES')" class="px-2.5 py-1 text-[10px] font-bold rounded-lg transition ${t.attachments === 'YES' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}">YES</button>
-                                    <button onclick="setAttachment('${t.id}', 'NO')" class="px-2.5 py-1 text-[10px] font-bold rounded-lg transition ${t.attachments === 'NO' ? 'bg-rose-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}">NO</button>
+                                    <button onclick="setAttachment('${t.id}', 'YES')" class="px-2.5 py-1 text-[10px] font-bold rounded-lg transition ${t.attachments === 'YES' ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">YES</button>
+                                    <button onclick="setAttachment('${t.id}', 'NO')" class="px-2.5 py-1 text-[10px] font-bold rounded-lg transition ${t.attachments === 'NO' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">NO</button>
                                     <button onclick="setAttachment('${t.id}', 'NA')" class="px-2.5 py-1 text-[10px] font-bold rounded-lg transition ${t.attachments === 'NA' ? 'bg-slate-300 text-slate-800' : 'text-slate-600 hover:text-slate-900'}">N/A</button>
                                 </div>
 
                                 <div class="flex items-center gap-2 flex-wrap">
                                     <!-- Cancelled Toggle Button -->
-                                    <button onclick="toggleCancelled('${t.id}')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${t.isCancelled ? 'bg-slate-700 text-white shadow-sm' : 'bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-300'}" title="Mark Change Request as Cancelled">
+                                    <button onclick="toggleCancelled('${t.id}')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${t.isCancelled ? 'bg-slate-700 text-white shadow-xs' : 'bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-300'}" title="Mark Change Request as Cancelled">
                                         <i data-lucide="ban" class="w-3.5 h-3.5 ${t.isCancelled ? 'text-rose-400' : ''}"></i>
                                         <span>${t.isCancelled ? 'Cancelled' : 'Cancel CR'}</span>
                                     </button>
 
-                                    <button onclick="toggleReviewed('${t.id}')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${t.isReviewed ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-300'}">
+                                    <button onclick="toggleReviewed('${t.id}')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${t.isReviewed ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-300'}">
                                         <i data-lucide="${t.isReviewed ? 'check-circle-2' : 'clipboard-check'}" class="w-3.5 h-3.5"></i>
                                         <span>${t.isReviewed ? 'Reviewed' : 'Mark Reviewed'}</span>
                                     </button>
@@ -1297,7 +1363,7 @@
                                         <span>${t.cabApproved ? 'Approved' : 'CAB Approve'}</span>
                                     </button>
 
-                                    <button onclick="openModal('${t.id}')" class="bg-teal-700 hover:bg-teal-800 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                                    <button onclick="openModal('${t.id}')" class="bg-teal-700 hover:bg-teal-800 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs">
                                         <i data-lucide="eye" class="w-3.5 h-3.5"></i> Review
                                     </button>
                                 </div>
@@ -1305,7 +1371,7 @@
                         </div>
 
                         <!-- Notes Bar -->
-                        <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
                             <div class="flex items-center gap-2 flex-1 mr-4 overflow-hidden">
                                 <i data-lucide="message-square" class="w-3.5 h-3.5 text-teal-600 shrink-0"></i>
                                 <input type="text" value="${t.notes || ''}" placeholder="Click to add review notes..." onchange="updateNotes('${t.id}', this.value)" class="bg-transparent text-slate-800 placeholder-slate-400 focus:outline-none w-full text-xs">
@@ -1384,7 +1450,7 @@
             // Risk Override Button State in Modal
             const riskOverrideBtn = document.getElementById('modal-risk-override-btn');
             if (t.riskMismatchOverride) {
-                riskOverrideBtn.className = "px-2.5 py-1 text-[10px] font-bold rounded-lg transition bg-teal-700 text-white shadow-sm border border-teal-800";
+                riskOverrideBtn.className = "px-2.5 py-1 text-[10px] font-bold rounded-lg transition bg-teal-700 text-white shadow-xs border border-teal-800";
                 riskOverrideBtn.innerText = "✓ Exception Granted";
             } else {
                 riskOverrideBtn.className = "px-2.5 py-1 text-[10px] font-bold rounded-lg transition bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300";
@@ -1394,7 +1460,7 @@
             // Cancelled Button State in Modal
             const cancelBtn = document.getElementById('modal-cancel-btn');
             if (t.isCancelled) {
-                cancelBtn.className = "bg-slate-700 text-white font-bold px-3 py-2 rounded-xl text-xs transition border border-slate-800 flex items-center gap-1 shadow-sm";
+                cancelBtn.className = "bg-slate-700 text-white font-bold px-3 py-2 rounded-xl text-xs transition border border-slate-800 flex items-center gap-1 shadow-xs";
                 cancelBtn.innerHTML = `<i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-rose-300"></i> Restore CR (Uncancel)`;
             } else {
                 cancelBtn.className = "bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 font-bold px-3 py-2 rounded-xl text-xs transition border border-slate-300 flex items-center gap-1";
@@ -1499,9 +1565,9 @@
         function renderModalAttachmentButtons(t) {
             const container = document.getElementById('modal-attachment-buttons');
             container.innerHTML = `
-                <button onclick="setAttachment('${t.id}', 'YES')" class="px-2.5 py-1 text-[10px] font-bold rounded-lg transition ${t.attachments === 'YES' ? 'bg-teal-600 text-white shadow-sm' : 'bg-slate-200 text-slate-700'}">YES</button>
-                <button onclick="setAttachment('${t.id}', 'NO')" class="px-2.5 py-1 text-[10px] font-bold rounded-lg transition ${t.attachments === 'NO' ? 'bg-rose-600 text-white shadow-sm' : 'bg-slate-200 text-slate-700'}">NO</button>
-                <button onclick="setAttachment('${t.id}', 'NA')" class="px-2.5 py-1 text-[10px] font-bold rounded-lg transition ${t.attachments === 'NA' ? 'bg-slate-400 text-white shadow-sm' : 'bg-slate-200 text-slate-700'}">N/A</button>
+                <button onclick="setAttachment('${t.id}', 'YES')" class="px-2.5 py-1 text-[10px] font-bold rounded-lg transition ${t.attachments === 'YES' ? 'bg-teal-600 text-white shadow-xs' : 'bg-slate-200 text-slate-700'}">YES</button>
+                <button onclick="setAttachment('${t.id}', 'NO')" class="px-2.5 py-1 text-[10px] font-bold rounded-lg transition ${t.attachments === 'NO' ? 'bg-rose-600 text-white shadow-xs' : 'bg-slate-200 text-slate-700'}">NO</button>
+                <button onclick="setAttachment('${t.id}', 'NA')" class="px-2.5 py-1 text-[10px] font-bold rounded-lg transition ${t.attachments === 'NA' ? 'bg-slate-400 text-white shadow-xs' : 'bg-slate-200 text-slate-700'}">N/A</button>
             `;
         }
 
@@ -1699,7 +1765,6 @@
             reader.readAsArrayBuffer(file);
         }
 
-        // Export High-Level Summary Excel Spreadsheet with dynamic filename "VRS CAB - M/D/YYYY.xlsx"
         function exportToExcel() {
             if (tickets.length === 0) {
                 showNotification("No tickets available to export.", "info");
@@ -1744,6 +1809,206 @@
             setTab('all');
             updateDashboard();
             showNotification("Loaded 4 sample demo tickets.", "success");
+        }
+
+        function toggleAIChatDrawer() {
+            const drawer = document.getElementById('ai-chat-drawer');
+            drawer.classList.toggle('closed');
+            lucide.createIcons();
+        }
+
+        function askAIToAnalyzeQueue() {
+            const drawer = document.getElementById('ai-chat-drawer');
+            if (drawer.classList.contains('closed')) {
+                drawer.classList.remove('closed');
+            }
+            sendPredefinedAIQuery('Analyze loaded queue');
+        }
+
+        function sendPredefinedAIQuery(queryText) {
+            document.getElementById('ai-chat-input').value = queryText;
+            handleAIChatSubmit(new Event('submit'));
+        }
+
+        // Knowledge Base Offline Fallbacks for Common ITIL Queries
+        const offlineITILKnowledgeBase = {
+            "standard": `**ITIL 4 Change Enablement - Standard Changes:**\n\n- **Definition:** Pre-authorized, low-risk, frequent, and well-understood changes following a documented procedure.\n- **Examples:** Password resets, routine OS patching, standard server reboots.\n- **Governance:** Does **NOT** require CAB review every time once the change model is approved.\n- **Key Criteria:** Requires proven historical success and automated rollbacks.`,
+            
+            "emergency": `**ITIL 4 Change Enablement - Emergency Changes:**\n\n- **Definition:** Urgent changes implemented as soon as possible to resolve/prevent a critical incident or major business disruption.\n- **Governance:** Reviewed by an **Emergency CAB (ECAB)** or small designated team.\n- **Process:** Testing and documentation may be streamlined during implementation, but full post-implementation testing and CAB documentation are mandatory immediately after service stabilization.`,
+            
+            "cab": `**ITIL 4 Change Advisory Board (CAB) Governance:**\n\n- **Purpose:** An advisory group that evaluates the risk, impact, business priority, and scheduling of Normal Changes.\n- **Key Role:** Co-Change Managers and technical leads review whether implementation plans, risk assessments, test plans, and backout strategies are complete before sign-off.\n- **Focus:** Preventing incidents, ensuring business stakeholder alignment, and eliminating schedule collisions.`,
+            
+            "risk": `**ITIL 4 Risk & Impact Guidelines:**\n\n1. **Impact:** Extent of disruption (users affected, business services impacted, financial risk).\n2. **Risk:** Probability of failure during rollout.\n3. **Red Flags in CAB:** \n   - Risk text saying "Low" while Impact level dropdown is set to "High"\n   - Missing or brief Backout plans\n   - Scheduled rollout windows extending over multiple days for simple toggle switches without justification.`
+        };
+
+        async function handleAIChatSubmit(e) {
+            if (e) e.preventDefault();
+            const inputEl = document.getElementById('ai-chat-input');
+            const promptText = inputEl.value.trim();
+            if (!promptText) return;
+
+            // Clear input
+            inputEl.value = '';
+
+            // Append User Message to UI
+            appendChatMessage('user', promptText);
+
+            // Append Loading Indicator
+            const loadingMsgId = appendChatMessage('ai', 'Thinking... AI analyzing ITIL framework and queue data...', true);
+
+            // Context generation from active tickets queue
+            const totalCount = tickets.length;
+            const redCount = tickets.filter(t => !t.isCancelled && t.rag === 'RED').length;
+            const yellowCount = tickets.filter(t => !t.isCancelled && t.rag === 'YELLOW').length;
+            const greenCount = tickets.filter(t => !t.isCancelled && (t.rag === 'GREEN' || t.isReviewed)).length;
+            const lateCount = tickets.filter(t => t.flags && t.flags.includes("LATE_SUBMISSION")).length;
+            
+            let ticketSummary = tickets.slice(0, 8).map(t => 
+                `• ID: ${t.id} | Title: "${t.title}" | Category: ${t.category} | Impact: ${t.impact} | Opened: ${t.openedDate || 'N/A'} | Status: ${t.rag} | Score: ${t.score} | Notes/Flags: ${t.flags.join(', ') || 'None'}`
+            ).join('\n');
+
+            if (!ticketSummary) {
+                ticketSummary = "No tickets are currently loaded in the dashboard queue.";
+            }
+
+            const systemPrompt = `You are a world-class ITIL 4 Change Enablement Practice Specialist and Change Advisory Board (CAB) Advisor. 
+You advise Co-Change Managers on ITIL 4 Change Enablement best practices, emergency vs normal vs standard changes, CAB SLAs, risk/impact evaluations, and backout plan requirements.
+
+CONTEXT OF CURRENT CAB DASHBOARD:
+- Total Tickets: ${totalCount}
+- Ready for CAB (Green): ${greenCount}
+- Minor Modifications Needed (Yellow): ${yellowCount}
+- Critical Defects / Reject (Red): ${redCount}
+- Late Submissions (Missed 6:00 AM EST Cutoff): ${lateCount}
+
+CURRENT TICKETS SUMMARY IN QUEUE:
+${ticketSummary}
+
+INSTRUCTIONS:
+1. Provide accurate, professional, concise, and structured answers formatted nicely with bullet points and bold headers.
+2. If the user asks to analyze the queue, highlight specific tickets with defects, late submissions, or missing backout plans.
+3. Reference ITIL 4 principles (Value, Risk, Emergency Changes, Standard Models, CAB Governance).`;
+
+            try {
+                // Call Gemini 3 Flash Preview
+                const apiKey = ""; // Runtime automatically provided in fetch
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: promptText }] }],
+                    systemInstruction: {
+                        parts: [{ text: systemPrompt }]
+                    }
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API response status ${response.status}`);
+                }
+
+                const result = await response.json();
+                const aiResponseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                removeChatMessage(loadingMsgId);
+
+                if (aiResponseText) {
+                    appendChatMessage('ai', formatMarkdownText(aiResponseText));
+                } else {
+                    fallbackOfflineResponse(promptText, loadingMsgId);
+                }
+
+            } catch (err) {
+                console.warn("AI API Call fallback triggering:", err);
+                removeChatMessage(loadingMsgId);
+                fallbackOfflineResponse(promptText);
+            }
+        }
+
+        function fallbackOfflineResponse(queryText) {
+            const lower = queryText.toLowerCase();
+            let reply = "";
+
+            if (lower.includes("analyze") || lower.includes("queue") || lower.includes("batch")) {
+                const total = tickets.length;
+                const late = tickets.filter(t => t.flags && t.flags.includes("LATE_SUBMISSION")).length;
+                const red = tickets.filter(t => !t.isCancelled && t.rag === 'RED').length;
+                const yellow = tickets.filter(t => !t.isCancelled && t.rag === 'YELLOW').length;
+                
+                reply = `**ITIL 4 AI Queue Telemetry Analysis:**\n\n` +
+                        `- **Total Tickets in Queue:** ${total}\n` +
+                        `- **Critical Defect / Red Tickets:** ${red} (Requires immediate revision before CAB)\n` +
+                        `- **Minor Modification / Yellow:** ${yellow}\n` +
+                        `- **Late Submissions (Missed 6 AM EST SLA Cutoff):** ${late}\n\n` +
+                        `**Key Recommendation for Change Manager:**\n` +
+                        `Check tickets marked with empty backout plans or risk level discrepancies during Tuesday/Thursday CAB call!`;
+            } else if (lower.includes("standard")) {
+                reply = offlineITILKnowledgeBase["standard"];
+            } else if (lower.includes("emergency")) {
+                reply = offlineITILKnowledgeBase["emergency"];
+            } else if (lower.includes("cab") || lower.includes("authority")) {
+                reply = offlineITILKnowledgeBase["cab"];
+            } else if (lower.includes("backout") || lower.includes("revert")) {
+                reply = `**ITIL 4 Backout Plan Requirements:**\n\n1. **Explicit Triggers:** Clear criteria on *when* to abort implementation.\n2. **Step-by-step Revert Commands:** Shell/PowerShell scripts or DB rollback procedures.\n3. **Validation Steps:** Verification that services are restored after rollback.`;
+            } else {
+                reply = offlineITILKnowledgeBase["risk"];
+            }
+
+            appendChatMessage('ai', formatMarkdownText(reply));
+        }
+
+        function formatMarkdownText(txt) {
+            return txt
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`([^`]+)`/g, '<code class="bg-slate-200 px-1 py-0.5 rounded text-[11px] font-mono">$1</code>')
+                .replace(/\n\n/g, '<br/><br/>')
+                .replace(/\n/g, '<br/>');
+        }
+
+        function appendChatMessage(sender, text, isLoading = false) {
+            const historyEl = document.getElementById('ai-chat-history');
+            const msgId = 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);
+
+            const isUser = sender === 'user';
+
+            const wrapper = document.createElement('div');
+            wrapper.id = msgId;
+            wrapper.className = `flex items-start gap-2.5 ${isUser ? 'justify-end' : ''}`;
+
+            if (isUser) {
+                wrapper.innerHTML = `
+                    <div class="bg-teal-700 text-white p-3 rounded-2xl rounded-tr-none max-w-[85%] leading-relaxed shadow-xs">
+                        ${text}
+                    </div>
+                    <div class="p-1.5 bg-slate-800 text-white rounded-lg shrink-0 mt-0.5">
+                        <i data-lucide="user" class="w-4 h-4"></i>
+                    </div>
+                `;
+            } else {
+                wrapper.innerHTML = `
+                    <div class="p-1.5 bg-teal-700 text-white rounded-lg shrink-0 mt-0.5">
+                        <i data-lucide="bot" class="w-4 h-4"></i>
+                    </div>
+                    <div class="bg-slate-100 border border-slate-200 p-3 rounded-2xl rounded-tl-none text-slate-800 space-y-1.5 max-w-[88%] leading-relaxed">
+                        ${isLoading ? `<div class="flex items-center gap-2 text-teal-800 font-medium"><i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> <span>${text}</span></div>` : text}
+                    </div>
+                `;
+            }
+
+            historyEl.appendChild(wrapper);
+            historyEl.scrollTop = historyEl.scrollHeight;
+            lucide.createIcons();
+            return msgId;
+        }
+
+        function removeChatMessage(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
         }
     </script>
 </body>
